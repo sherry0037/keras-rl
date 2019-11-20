@@ -1,3 +1,37 @@
+# CS394N - Final Project - Transfer Learning for RL
+
+For the final project, we are going to investigate one application of Transfer Learning for Reinforcement Learning Task. 
+The OpenAI Gym provides a set of Atari games environments with two input settings: screen frames in the form of RGB images, and RAM (a 256 byte array containing the state of the game). 
+There is no direct way to transform one input to another, since RAM potentially contains state information that is not 
+represented in the pixels. We are interested in developing methods that transfer the policies learned 
+from one input setting to the same game with different input setting. 
+Essentially we want to model a mapping between the two settings such that transferring learned knowledge is possible. 
+We will be using the openAI gym to get the Atari games (https://gym.openai.com/). One game we are considering trying transfer in is Amidar v0 to Amidar - ram v0.
+
+
+Experiment Steps:
+
+1. Generate matching pairs of RGB images and RAM states.
+
+2. Design and train a neural network (RGB2RAM) to map RGB images to RAM states.
+
+3. Train an RL model (RL-RAM) using RAM inputs.
+
+4. Train an RL model (RL-RGB) using RGB inputs (serves as baseline).
+
+5. Transfer the RL-RAM model on the same task with RGB inputs by first converting the RGB inputs using RGB2RAM, then applying the RL-RAM model.
+    - compare training time & accuracies with the RL-RGB baseline.
+
+6. (Optional) Fine-tuning to improve accuracy.
+
+7. (Extention) Repeat 1 & 2 for several different games so that RGB2RAM is a general mapping between RGB images and RAM states.
+Then if there is an Atari game that we only have access to the environment with RGB inputs, while someone else has trained an
+RL-RAM model, we can transfer the RL-RAM model to our environment even we don't have the RAM inputs.
+
+    (This can be apply to a broader case, where someone else has trained and published a model, but you don't have access to the
+same inputs they use to train the model; you do have access to similar games where you have both inputs, so you can learn a mapping 
+between the two inputs to make use of the already-trained model.)
+
 # Deep Reinforcement Learning for Keras
 
 [![Build Status](https://api.travis-ci.org/keras-rl/keras-rl.svg?branch=master)](https://travis-ci.org/keras-rl/keras-rl)
