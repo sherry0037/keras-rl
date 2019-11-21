@@ -10,8 +10,7 @@ from rl.callbacks import (
     TestLogger,
     TrainEpisodeLogger,
     TrainIntervalLogger,
-    Visualizer,
-    WandbLogger
+    Visualizer
 )
 
 

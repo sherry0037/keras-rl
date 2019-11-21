@@ -1,5 +1,6 @@
 # CS394N - Final Project - Transfer Learning for RL
 
+## Description
 For the final project, we are going to investigate one application of Transfer Learning for Reinforcement Learning Task. 
 The OpenAI Gym provides a set of Atari games environments with two input settings: screen frames in the form of RGB images, and RAM (a 256 byte array containing the state of the game). 
 There is no direct way to transform one input to another, since RAM potentially contains state information that is not 
@@ -9,7 +10,7 @@ Essentially we want to model a mapping between the two settings such that transf
 We will be using the openAI gym to get the Atari games (https://gym.openai.com/). One game we are considering trying transfer in is Amidar v0 to Amidar - ram v0.
 
 
-Experiment Steps:
+##Experiment Steps
 
 1. Generate matching pairs of RGB images and RAM states.
 
@@ -31,6 +32,16 @@ RL-RAM model, we can transfer the RL-RAM model to our environment even we don't 
     (This can be apply to a broader case, where someone else has trained and published a model, but you don't have access to the
 same inputs they use to train the model; you do have access to similar games where you have both inputs, so you can learn a mapping 
 between the two inputs to make use of the already-trained model.)
+
+##Implementation and Usages
+
+1. `dqn_double.py` defines an dqn agent that records both RGB and RAM in callbacks during training.
+
+    Run `python examples/dqn_atari_double.py` to train a model on RGB and save observations.
+    
+    TODO: change this to train a model on RAM.
+    
+    Change the frequency of saving observations on line 212 in `rl/callbacks.py`.
 
 # Deep Reinforcement Learning for Keras
 
