@@ -10,7 +10,7 @@ Essentially we want to model a mapping between the two settings such that transf
 We will be using the openAI gym to get the Atari games (https://gym.openai.com/). One game we are considering trying transfer in is Amidar v0 to Amidar - ram v0.
 
 
-##Experiment Steps
+## Experiment Steps
 
 1. Generate matching pairs of RGB images and RAM states.
 
@@ -33,7 +33,7 @@ RL-RAM model, we can transfer the RL-RAM model to our environment even we don't 
 same inputs they use to train the model; you do have access to similar games where you have both inputs, so you can learn a mapping 
 between the two inputs to make use of the already-trained model.)
 
-##Implementation and Usages
+## Implementation and Usages
 
 1. `dqn_double.py` defines an dqn agent that records both RGB and RAM in callbacks during training.
 
