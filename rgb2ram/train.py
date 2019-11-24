@@ -32,7 +32,7 @@ model = CNNModel(input_shape, output_dim, layer_filters, kernel_size).build()
 model.summary()
 
 model.compile(loss=keras.losses.mean_squared_error,
-                optimizer=keras.optimizers.Adam(), metrics=['mse','mae'])
+              optimizer=keras.optimizers.Adam(), metrics=['mse','mae'])
 
 history = model.fit(x_train,
             y_train,
