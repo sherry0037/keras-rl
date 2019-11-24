@@ -209,7 +209,7 @@ class TrainEpisodeLogger(Callback):
         }
         print(template.format(**variables))
         if "new" in logs.keys():
-            if episode % 10 == 0:
+            if episode % 50 == 0:
                 for i, image in enumerate(self.observations[episode]):
                     if i % 20 == 0:
                         save_rgb_array(image, output_dir="./train_history/environments/rgb/",
@@ -231,7 +231,8 @@ class TrainEpisodeLogger(Callback):
         """ Update statistics of episode after each step """
         episode = logs['episode']
         self.observations[episode].append(logs['observation'])
-        self.observations_ram[episode].append(logs['observation_ram'])
+        if 'observation_ram' in logs:
+          self.observations_ram[episode].append(logs['observation_ram'])
         self.rewards[episode].append(logs['reward'])
         self.actions[episode].append(logs['action'])
         self.metrics[episode].append(logs['metrics'])
