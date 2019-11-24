@@ -17,12 +17,12 @@ from rl.callbacks import (
     Visualizer
 )
 
-class DoubleDQNAgent(DQNAgent):
+class NewDQNAgent(DQNAgent):
     def __init__(self, *args, **kwargs):
-        super(DoubleDQNAgent, self).__init__(*args, **kwargs)
-        print("Using double agent!")
+        super(NewDQNAgent, self).__init__(*args, **kwargs)
+        print("Using new agent!")
 
-    def double_fit(self, env, nb_steps, action_repetition=1, callbacks=None, verbose=1,
+    def new_fit(self, env, nb_steps, action_repetition=1, callbacks=None, verbose=1,
                    visualize=False, nb_max_start_steps=0, start_step_policy=None, log_interval=10000,
                    nb_max_episode_steps=None):
         """Trains the agent on the given environment.
@@ -139,6 +139,7 @@ class DoubleDQNAgent(DQNAgent):
                 callbacks.on_step_begin(episode_step)
                 # This is were all of the work happens. We first perceive and compute the action
                 # (forward step) and then use the reward to improve (backward step).
+                print("OBSERVATION SHAPE: ",observation.shape)
                 action = self.forward(observation)
                 if self.processor is not None:
                     action = self.processor.process_action(action)
@@ -195,7 +196,7 @@ class DoubleDQNAgent(DQNAgent):
                         'episode_reward': episode_reward,
                         'nb_episode_steps': episode_step,
                         'nb_steps': self.step,
-                        'double': True,
+                        'new': True,
                     }
                     callbacks.on_episode_end(episode, episode_logs)
 

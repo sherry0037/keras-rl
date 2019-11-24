@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+:from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 import keras
@@ -32,14 +32,24 @@ model = CNNModel(input_shape, output_dim, layer_filters, kernel_size).build()
 model.summary()
 
 model.compile(loss=keras.losses.mean_squared_error,
-                optimizer=keras.optimizers.Adam())
+              optimizer=keras.optimizers.Adam(), metrics=['mse','mae'])
 
-model.fit(x_train,
+history = model.fit(x_train,
             y_train,
             validation_data=(x_test, y_test),
             epochs=num_epochs,
             batch_size=batch_size,
             shuffle=True)
+
+print(history.history.keys())
+# "Loss"
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('model loss')
+plt.ylabel('loss')
+plt.xlabel('epoch')
+plt.legend(['train', 'validation'], loc='upper left')
+plt.show()
 
 # serialize model to JSON
 model_path = "./saved_model/"
