@@ -208,8 +208,8 @@ class TrainEpisodeLogger(Callback):
             'metrics': metrics_text,
         }
         print(template.format(**variables))
-        if "double" in logs.keys():
-            if episode % 100 == 0:
+        if "new" in logs.keys():
+            if episode % 10 == 0:
                 for i, image in enumerate(self.observations[episode]):
                     if i % 20 == 0:
                         save_rgb_array(image, output_dir="./train_history/environments/rgb/",

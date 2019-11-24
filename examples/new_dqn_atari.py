@@ -2,7 +2,6 @@
 Train dqn model on Atari games and save RGB screenshots and RAM during training.
 """
 
-
 from __future__ import division
 import argparse
 
@@ -17,7 +16,7 @@ from keras.optimizers import Adam
 import keras.backend as K
 
 from rl.agents.dqn import DQNAgent
-from rl.agents.dqn_double import DoubleDQNAgent
+from rl.agents.new_dqn import NewDQNAgent
 from rl.policy import LinearAnnealedPolicy, BoltzmannQPolicy, EpsGreedyQPolicy
 from rl.memory import SequentialMemory
 from rl.core import Processor
@@ -25,12 +24,23 @@ from rl.callbacks import FileLogger, ModelIntervalCheckpoint
 
 
 INPUT_SHAPE = (84, 84)
+RAM_SHAPE = (128,) 
 WINDOW_LENGTH = 4
 
 
 # todo: This processor is for training RGB inputs. Change to train on RAM inputs.
 class AtariProcessor(Processor):
+    
+    def __init__(self, is_ram):
+      self.is_ram = is_ram
+      super().__init__()
+
     def process_observation(self, observation):
+        if self.is_ram:
+          assert observation.ndim == 1
+          assert observation.shape == RAM_SHAPE
+          return observation.astype('uint8') # saves storage in experience memory
+ 
         assert observation.ndim == 3  # (height, width, channel)
         img = Image.fromarray(observation)
         img = img.resize(INPUT_SHAPE).convert('L')  # resize and convert to grayscale
@@ -51,12 +61,17 @@ class AtariProcessor(Processor):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--mode', choices=['train', 'test'], default='train')
-parser.add_argument('--env-name', type=str, default='BreakoutDeterministic-v4')
+
+# Env-name: RAM: Breakout-ramDeterministic-v4, RGB: BreakoutDeterministic-v4
+parser.add_argument('--env-name', type=str, default='Breakout-ramDeterministic-v4') 
+
 parser.add_argument('--weights', type=str, default=None)
 args = parser.parse_args()
 
 # Get the environment and extract the number of actions.
 env = gym.make(args.env_name)
+is_ram = True if "ram" in args.env_name else False
+
 np.random.seed(123)
 env.seed(123)
 nb_actions = env.action_space.n
@@ -88,7 +103,7 @@ print(model.summary())
 # Finally, we configure and compile our agent. You can use every built-in Keras optimizer and
 # even the metrics!
 memory = SequentialMemory(limit=1000000, window_length=WINDOW_LENGTH)
-processor = AtariProcessor()
+processor = AtariProcessor(is_ram)
 
 # Select a policy. We use eps-greedy action selection, which means that a random action is selected
 # with probability eps. We anneal eps from 1.0 to 0.1 over the course of 1M steps. This is done so that
@@ -107,7 +122,7 @@ policy = LinearAnnealedPolicy(EpsGreedyQPolicy(), attr='eps', value_max=1., valu
 #dqn = DQNAgent(model=model, nb_actions=nb_actions, policy=policy, memory=memory,
 #               processor=processor, nb_steps_warmup=50000, gamma=.99, target_model_update=10000,
 #               train_interval=4, delta_clip=1.)
-dqn = DoubleDQNAgent(model=model, nb_actions=nb_actions, policy=policy, memory=memory,
+dqn = NewDQNAgent(model=model, nb_actions=nb_actions, policy=policy, memory=memory,
                processor=processor, nb_steps_warmup=50000, gamma=.99, target_model_update=10000,
                train_interval=4, delta_clip=1.)
 dqn.compile(Adam(lr=.00025), metrics=['mae'])
@@ -121,9 +136,9 @@ if args.mode == 'train':
     callbacks = [ModelIntervalCheckpoint(checkpoint_weights_filename, interval=250000)]
     callbacks += [FileLogger(log_filename, interval=100)]
 
-    # Use double_fit to save both RGB and RAM during training
+    # Use new_fit to save both RGB and RAM during training
     # Use fit to train normally
-    dqn.double_fit(env, callbacks=callbacks, nb_steps=1750000, log_interval=10000, verbose=2)
+    dqn.new_fit(env, callbacks=callbacks, nb_steps=1750000, log_interval=10000, verbose=2)
 
     # Finally, evaluate our algorithm for 10 episodes.
     dqn.test(env, nb_episodes=10, visualize=False)
