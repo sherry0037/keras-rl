@@ -127,7 +127,7 @@ def save_rgb_array(image_array, output_dir="", filename=""):
     img = Image.fromarray(image_array)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    img.save(output_dir + '/rgb{}.png'.format(filename))
+    img.save(output_dir + '/{}.png'.format(filename))
 
 
 class TrainEpisodeLogger(Callback):
@@ -209,15 +209,15 @@ class TrainEpisodeLogger(Callback):
         }
         print(template.format(**variables))
         if "new" in logs.keys():
-            if episode % 10 == 0:
+            if episode % 50 == 0:
                 for i, image in enumerate(self.observations[episode]):
                     if i % 20 == 0:
                         save_rgb_array(image, output_dir="./train_history/environments/rgb/",
-                                       filename="_epi_{}_step_{}".format(episode, i))
+                                       filename="rgb_epi_{}_step_{}".format(episode, i))
                         ram = self.observations_ram[episode][i]
                         ram = np.reshape(ram, (1, -1))
                         save_rgb_array(ram, output_dir="./train_history/environments/ram/",
-                                       filename="_epi_{}_step_{}".format(episode, i))
+                                       filename="ram_epi_{}_step_{}".format(episode, i))
 
         # Free up resources.
         del self.episode_start[episode]
@@ -231,7 +231,8 @@ class TrainEpisodeLogger(Callback):
         """ Update statistics of episode after each step """
         episode = logs['episode']
         self.observations[episode].append(logs['observation'])
-        self.observations_ram[episode].append(logs['observation_ram'])
+        if 'observation_ram' in logs:
+          self.observations_ram[episode].append(logs['observation_ram'])
         self.rewards[episode].append(logs['reward'])
         self.actions[episode].append(logs['action'])
         self.metrics[episode].append(logs['metrics'])

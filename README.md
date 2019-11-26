@@ -42,6 +42,17 @@ between the two inputs to make use of the already-trained model.)
     TODO: change this to train a model on RAM.
     
     Change the frequency of saving observations on line 212 in `rl/callbacks.py`.
+    
+## Next steps:
+
+1. Train a model on Ram.
+
+2. Train RGB2RAM model:
+    - try different architectures
+    - try different loss and optimizer
+    - try different dataset sizes
+    
+  
 
 # Deep Reinforcement Learning for Keras
 
