@@ -1,63 +1,40 @@
-:from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-import keras
-import numpy as np
-import utils
-import os
+# Train neural network to map RGB images to RAM output
 
-from model import CNNModel
+import utils
+import numpy as np
+from models import *
+from keras import optimizers
+
+# Network parameters
+model_type = CNNModel2
+save_data = True
+train_split = 0.8
+layer_sizes = [0, 0]
+batch_size = 8
+num_epochs = 60
 
 np.random.seed(1337)
 
-# Load dataset
-x_train, y_train, x_test, y_test = utils.load_datasets()
+x_train, y_train, x_test, y_test = utils.load_data(model_type, train_split, save_data)
 
-image_size = x_train.shape[1]
-x_train = np.reshape(x_train, [-1, image_size, image_size, 1])
-x_test = np.reshape(x_test, [-1, image_size, image_size, 1])
-x_train = x_train.astype('float32') / 255
-x_test = x_test.astype('float32') / 255
+# Normalization
+mean_train, sigma_train = np.mean(x_train, axis=0), np.std(x_train, axis=0)
+x_train = (x_train - mean_train)
+x_test = (x_test - mean_train)
 
-# Network parameters
-input_shape = (image_size, image_size, 1)
-output_dim = 128
-batch_size = 128
-num_epochs = 600
-
-kernel_size = 3
-layer_filters = [32, 64]
-
-model = CNNModel(input_shape, output_dim, layer_filters, kernel_size).build()
+model = model_type(layer_sizes = layer_sizes, model_type = model_type).build()
 model.summary()
 
-model.compile(loss=keras.losses.mean_squared_error,
-                optimizer=keras.optimizers.Adam(), metrics=['mse','mae'])
+# sgd = optimizers.SGD(learning_rate=0.0001, momentum=0.0, nesterov=False)
+model.compile(loss='mse', optimizer='adam' , metrics=['mse','mae'])
 
+print(x_train.shape, y_train.shape)
 history = model.fit(x_train,
-            y_train,
-            validation_data=(x_test, y_test),
-            epochs=num_epochs,
-            batch_size=batch_size,
-            shuffle=True)
+                    y_train,
+                    validation_data=(x_test, y_test),
+                    epochs=num_epochs,
+                    batch_size=batch_size,
+                    shuffle=True)
 
-print(history.history.keys())
-# "Loss"
-plt.plot(history.history['loss'])
-plt.plot(history.history['val_loss'])
-plt.title('model loss')
-plt.ylabel('loss')
-plt.xlabel('epoch')
-plt.legend(['train', 'validation'], loc='upper left')
-plt.show()
-
-# serialize model to JSON
-model_path = "./saved_model/"
-if not os.path.exists(model_path):
-    os.makedirs(model_path)
-model_json = model.to_json()
-with open(model_path+"model1.json", "w") as json_file:
-    json_file.write(model_json)
-# serialize weights to HDF5
-model.save_weights(model_path+"model1.h5")
-print("Saved model to disk")
+utils.save_model(model, model_type)
+utils.plot_history(history)

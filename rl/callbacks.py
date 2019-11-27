@@ -122,13 +122,11 @@ class TestLogger(Callback):
         ]
         print(template.format(*variables))
 
-
 def save_rgb_array(image_array, output_dir="", filename=""):
     img = Image.fromarray(image_array)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     img.save(output_dir + '/rgb{}.png'.format(filename))
-
 
 class TrainEpisodeLogger(Callback):
     def __init__(self):
@@ -207,9 +205,16 @@ class TrainEpisodeLogger(Callback):
             'obs_max': np.max(self.observations[episode]),
             'metrics': metrics_text,
         }
+        #
+        # so every 10th epsiode (line 216)
+        # so save_rgb_array is called and now that function is on line 126
+        # let's go to that line?
+        # i just saw. why not use that function only?
+        # i copied from that function only yea
+        # wait come to line 126
         print(template.format(**variables))
         if "new" in logs.keys():
-            if episode % 50 == 0:
+            if episode % 10 == 0:
                 for i, image in enumerate(self.observations[episode]):
                     if i % 20 == 0:
                         save_rgb_array(image, output_dir="./train_history/environments/rgb/",
