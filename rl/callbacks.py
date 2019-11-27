@@ -126,7 +126,7 @@ def save_rgb_array(image_array, output_dir="", filename=""):
     img = Image.fromarray(image_array)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    img.save(output_dir + '/rgb{}.png'.format(filename))
+    img.save(output_dir + '/{}.png'.format(filename))
 
 class TrainEpisodeLogger(Callback):
     def __init__(self):
@@ -218,11 +218,11 @@ class TrainEpisodeLogger(Callback):
                 for i, image in enumerate(self.observations[episode]):
                     if i % 20 == 0:
                         save_rgb_array(image, output_dir="./train_history/environments/rgb/",
-                                       filename="_epi_{}_step_{}".format(episode, i))
+                                       filename="rgb_epi_{}_step_{}".format(episode, i))
                         ram = self.observations_ram[episode][i]
                         ram = np.reshape(ram, (1, -1))
                         save_rgb_array(ram, output_dir="./train_history/environments/ram/",
-                                       filename="_epi_{}_step_{}".format(episode, i))
+                                       filename="ram_epi_{}_step_{}".format(episode, i))
 
         # Free up resources.
         del self.episode_start[episode]
