@@ -1,124 +1,175 @@
+# come to save_datasets
 import os
 import random
 import shutil
 from PIL import Image
-import numpy
-
-random.seed(42)
-TRAIN_DIR = "./data/train"
-VAL_DIR = "./data/val"
-SOURCE_RGB_DIR = "../train_history/environments/rgb"
-SOURCE_RAM_DIR = "../train_history/environments/ram"
-SPLIT_RATIO = [0.8, 0.2]
-
+import numpy as np
+import matplotlib.pyplot as plt
 
 def get_datasets():
-    """
-    Copy images and rams from ../train_history/environments to ./data/
-    :return:
-    """
-    if not os.path.exists(TRAIN_DIR):
-        os.makedirs(TRAIN_DIR)
-    if not os.path.exists(VAL_DIR):
-        os.makedirs(VAL_DIR)
-    if not os.path.exists(SOURCE_RGB_DIR) or not os.path.exists(SOURCE_RAM_DIR):
-        raise Exception('Cannot find source images.')
+  # Copy images and rams from ../train_history/environments and save to "rgb_ram.npz"
 
-    rgb_files = []
-    for file in os.listdir(SOURCE_RGB_DIR):
-        if file.endswith(".png"):
-            rgb_files.append(file)
-    ram_files = []
-    for file in os.listdir(SOURCE_RAM_DIR):
-        if file.endswith(".png"):
-            ram_files.append(file)
+  SOURCE_RGB_DIR = "../train_history/environments/rgb"
+  SOURCE_RAM_DIR = "../train_history/environments/ram"
 
-    ratio = [0.90, 0.08, 0.02]
+  assert(len(os.listdir(SOURCE_RGB_DIR)) == len(os.listdir(SOURCE_RAM_DIR)))
 
-    assert(len(rgb_files) == len(ram_files))
-    data = list(zip(rgb_files, ram_files))
-    print("=" * 20)
-    print("Total number of data: %d" % len(data))
-    random.shuffle(data)
-    split_point = int(len(data) * ratio[0])
-    train = data[:split_point]
-    validation = data[split_point:]
-    print("#train: %d, #validation: %d" % (len(train), len(validation)))
-    print("Start generating datasets...")
+  rgb_files = []; rgb_filenames = []
+  ram_files = []; ram_filenames = []
+  for rgb_file, ram_file in zip(os.listdir(SOURCE_RGB_DIR), os.listdir(SOURCE_RAM_DIR)):
+    assert(rgb_file == ram_file)
+    rgb_files.append(read_image(os.path.join(SOURCE_RGB_DIR, rgb_file)))
+    ram_files.append(read_image(os.path.join(SOURCE_RAM_DIR, ram_file)))
+    rgb_filenames.append(rgb_file)
+    ram_filenames.append(ram_file)
 
-    rgb_dir = os.path.join(TRAIN_DIR, "rgb/")
-    ram_dir = os.path.join(TRAIN_DIR, 'ram/')
-    if not os.path.exists(rgb_dir):
-        os.makedirs(rgb_dir)
-    if not os.path.exists(ram_dir):
-        os.makedirs(ram_dir)
+  rgb_files = np.array(rgb_files)
+  ram_files = np.array(ram_files)
 
-    for rgb, ram in train:
-        shutil.copyfile(os.path.join(SOURCE_RGB_DIR, rgb), os.path.join(rgb_dir, rgb))
-        shutil.copyfile(os.path.join(SOURCE_RAM_DIR, ram), os.path.join(ram_dir, ram))
+  np.savez("rgb_ram", rgb = rgb_files, ram = ram_files, rgb_names = rgb_filenames, ram_names = ram_filenames)
 
-    rgb_dir = os.path.join(VAL_DIR, "rgb/")
-    ram_dir = os.path.join(VAL_DIR, 'ram/')
-    if not os.path.exists(rgb_dir):
-        os.makedirs(rgb_dir)
-    if not os.path.exists(ram_dir):
-        os.makedirs(ram_dir)
+def load_data(model_type = None, split = 0.8, is_save_data = False):
+  # Get train and val data and flatten them if FeedForward NN is the model
 
-    for rgb, ram in validation:
-        shutil.copyfile(os.path.join(SOURCE_RGB_DIR, rgb), os.path.join(rgb_dir, rgb))
-        shutil.copyfile(os.path.join(SOURCE_RAM_DIR, ram), os.path.join(ram_dir, ram))
+  x_train, y_train, x_test, y_test = load_datasets(is_save_data, split)
+  input_dim = 84 * 84
 
+  if model_type and "FFModel" in model_type.__name__:
+    if x_train is not None: x_train = np.reshape(x_train, [-1, input_dim])
+    if x_test is not None: x_test = np.reshape(x_test, [-1, input_dim])
 
-def load_datasets():
-    # Load train data
-    rgb_files = []
-    for file in os.listdir(os.path.join(TRAIN_DIR, "rgb")):
-        if file.endswith(".png"):
-            rgb_files.append(read_image(os.path.join(TRAIN_DIR, "rgb", file)))
-    ram_files = []
-    for file in os.listdir(os.path.join(TRAIN_DIR, "ram")):
-        if file.endswith(".png"):
-            y = read_image(os.path.join(TRAIN_DIR, "ram", file)).reshape(128)
-            ram_files.append(y)
+  if y_train is not None: y_train = np.reshape(y_train, [-1, 128])
+  if y_test is not None: y_test = np.reshape(y_test, [-1, 128])
 
-    train_rgb = numpy.stack(rgb_files, axis=0)
-    train_ram = numpy.stack(ram_files, axis=0)
-    print("Train rgb matrix shape: {}, ram matrix shape: {}".format(train_rgb.shape, train_ram.shape))
+  return x_train, y_train, x_test, y_test
 
-    # Load validation data
-    rgb_files = []
-    for file in os.listdir(os.path.join(VAL_DIR, "rgb")):
-        if file.endswith(".png"):
-            rgb_files.append(read_image(os.path.join(VAL_DIR, "rgb", file)))
-    ram_files = []
-    for file in os.listdir(os.path.join(VAL_DIR, "ram")):
-        if file.endswith(".png"):
-            y = read_image(os.path.join(VAL_DIR, "ram", file)).reshape(128)
-            ram_files.append(y)
+def load_datasets(is_save_data, split):
+  # load data from "rgb_ram.npz" and split into train and val
 
-    val_rgb = numpy.stack(rgb_files, axis=0)
-    val_ram = numpy.stack(ram_files, axis=0)
-    print("Validation rgb matrix shape: {}, ram matrix shape: {}".format(val_rgb.shape, val_ram.shape))
+  random.seed(42)
+  ldata = np.load("rgb_ram.npz")
+  data = list(zip(ldata['rgb'], ldata['ram'], ldata['rgb_names'], ldata['ram_names']))
 
-    return train_rgb, train_ram, val_rgb, val_ram
+  random.shuffle(data)
+  split_point = int(len(data) * split)
 
+  train = data[:split_point]
+  validation = data[split_point:]
+  print("#train: %d, #validation: %d" % (len(train), len(validation)))
+
+  train_rgb = train_ram = train_rgb_names = train_ram_names = None
+  val_rgb = val_ram = val_rgb_names = val_ram_names = None
+
+  if train: train_rgb, train_ram, train_rgb_names, train_ram_names = zip(*train)
+  if validation: val_rgb, val_ram, val_rgb_names, val_ram_names = zip(*validation)
+
+  if is_save_data: save_datasets(train_rgb, train_ram, val_rgb, val_ram,
+    train_rgb_names, train_ram_names, val_rgb_names, val_ram_names)
+
+  if train:
+    train_rgb = np.array(train_rgb).astype('float32') / 255
+    train_ram = np.array(train_ram).astype('float32') / 255
+
+  if validation:
+    val_rgb = np.array(val_rgb).astype('float32') / 255
+    val_ram = np.array(val_ram).astype('float32') / 255
+
+  return train_rgb, train_ram, val_rgb, val_ram
+
+def save_datasets(train_rgb, train_ram, val_rgb, val_ram,
+                  train_rgb_names, train_ram_names,
+                  val_rgb_names, val_ram_names):
+  # save train and val data in ./data within ram and rgb folders
+
+  TRAIN_DIR = "./data/train"
+  VAL_DIR = "./data/val"
+
+  if not os.path.exists(TRAIN_DIR): os.makedirs(TRAIN_DIR)
+  if not os.path.exists(VAL_DIR): os.makedirs(VAL_DIR)
+
+  train_rgb_dir = os.path.join(TRAIN_DIR, "rgb/")
+  train_ram_dir = os.path.join(TRAIN_DIR, 'ram/')
+  val_rgb_dir = os.path.join(VAL_DIR, "rgb/")
+  val_ram_dir = os.path.join(VAL_DIR, 'ram/')
+
+  if os.path.exists(train_rgb_dir): shutil.rmtree(train_rgb_dir)
+  if os.path.exists(train_ram_dir): shutil.rmtree(train_ram_dir)
+  if os.path.exists(val_rgb_dir): shutil.rmtree(val_rgb_dir)
+  if os.path.exists(val_ram_dir): shutil.rmtree(val_ram_dir)
+
+  os.makedirs(train_rgb_dir)
+  os.makedirs(train_ram_dir)
+  os.makedirs(val_rgb_dir)
+  os.makedirs(val_ram_dir)
+
+  if train_rgb is not None:
+    for train_rgb_e, train_ram_e, train_rgb_name, train_ram_name in zip(train_rgb, train_ram, train_rgb_names, train_ram_names):
+      train_rgb_img = Image.fromarray(np.squeeze(train_rgb_e, axis = -1).astype(np.uint8))
+      train_ram_img = Image.fromarray(np.squeeze(train_ram_e, axis = -1).astype(np.uint8))
+      train_rgb_img.save(train_rgb_dir + train_rgb_name)
+      train_ram_img.save(train_ram_dir + train_ram_name)
+  if val_rgb is not None:
+    for val_rgb_e, val_ram_e, val_rgb_name, val_ram_name in zip(val_rgb, val_ram, val_rgb_names, val_ram_names):
+      val_rgb_img = Image.fromarray(np.squeeze(val_rgb_e, axis = -1).astype(np.uint8))
+      val_ram_img = Image.fromarray(np.squeeze(val_ram_e, axis = -1).astype(np.uint8))
+      val_rgb_img.save(val_rgb_dir + val_rgb_name)
+      val_ram_img.save(val_ram_dir + val_ram_name)
+
+"""
+save_rgb_array(image, output_dir="./train_history/environments/rgb/",
+               filename="_epi_{}_step_{}".format(episode, i)
+
+def save_rgb_array(image_array, output_dir="", filename=""):
+    img = Image.fromarray(image_array)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    img.save(output_dir + '/rgb{}.png'.format(filename))
+"""
+"""
+(Pdb) image_array.shape
+(84, 84)
+(Pdb) image_array.dtype
+dtype('uint8')
+(Pdb) type(image_array)
+<class 'numpy.ndarray'>
+"""
 
 def read_image(image_path):
-    """Get a numpy array of an image so that one can access values[x][y]."""
-    image = Image.open(image_path, 'r')
-    width, height = image.size
-    pixel_values = list(image.getdata())
-    if image.mode == 'RGB':
-        channels = 3
-    elif image.mode == 'L':
-        channels = 1
-    else:
-        print("Unknown mode: %s" % image.mode)
-        return None
-    pixel_values = numpy.array(pixel_values).reshape((width, height, channels))
-    return pixel_values
+  """Get a numpy array of an image so that one can access values[x][y]."""
+  image = Image.open(image_path, 'r')
+  width, height = image.size
+  pixel_values = list(image.getdata())
+  if image.mode == 'RGB':
+    channels = 3
+  elif image.mode == 'L':
+    channels = 1
+  else:
+    print("Unknown mode: %s" % image.mode)
+    return None
+  pixel_values = np.array(pixel_values).reshape((width, height, channels))
+  return pixel_values
+
+def plot_history(history):
+  print(history.history.keys())
+  plt.plot(history.history['loss'])
+  plt.plot(history.history['val_loss'])
+  plt.title('model loss')
+  plt.ylabel('loss')
+  plt.xlabel('epoch')
+  plt.legend(['train', 'validation'], loc='upper left')
+  plt.show()
+
+def save_model(model, model_type):
+  # serialize model to JSON
+  model_path = "./saved_model/"
+  if not os.path.exists(model_path):
+      os.makedirs(model_path)
+  model_json = model.to_json()
+  with open(model_path + model_type.__name__ + ".json", "w") as json_file:
+      json_file.write(model_json)
+  # serialize weights to HDF5
+  model.save_weights(model_path+ model_type.__name__ + ".h5")
+  print("Saved model to disk")
 
 if __name__ == "__main__":
-    get_datasets()
-    #load_datasets()
-    pass
+  get_datasets()

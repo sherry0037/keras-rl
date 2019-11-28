@@ -24,13 +24,13 @@ from rl.callbacks import FileLogger, ModelIntervalCheckpoint
 
 
 INPUT_SHAPE = (84, 84)
-RAM_SHAPE = (128,) 
+RAM_SHAPE = (128,)
 WINDOW_LENGTH = 4
 
 
 # todo: This processor is for training RGB inputs. Change to train on RAM inputs.
 class AtariProcessor(Processor):
-    
+
     def __init__(self, is_ram):
       self.is_ram = is_ram
       super().__init__()
@@ -40,7 +40,7 @@ class AtariProcessor(Processor):
           assert observation.ndim == 1
           assert observation.shape == RAM_SHAPE
           return observation.astype('uint8') # saves storage in experience memory
- 
+
         assert observation.ndim == 3  # (height, width, channel)
         img = Image.fromarray(observation)
         img = img.resize(INPUT_SHAPE).convert('L')  # resize and convert to grayscale
@@ -63,7 +63,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--mode', choices=['train', 'test'], default='train')
 
 # Env-name: RAM: Breakout-ramDeterministic-v4, RGB: BreakoutDeterministic-v4
-parser.add_argument('--env-name', type=str, default='Breakout-ramDeterministic-v4') 
+parser.add_argument('--env-name', type=str, default='BreakoutDeterministic-v4') 
 
 parser.add_argument('--weights', type=str, default=None)
 args = parser.parse_args()
@@ -79,7 +79,7 @@ nb_actions = env.action_space.n
 # Next, we build our model. We use the same model that was described by Mnih et al. (2015).
 model = Sequential()
 if not is_ram:
-  input_shape = (WINDOW_LENGTH,) + INPUT_SHAPE 
+  input_shape = (WINDOW_LENGTH,) + INPUT_SHAPE
   if K.image_data_format() == 'channels_last':
       # (width, height, channels)
       model.add(Permute((2, 3, 1), input_shape=input_shape))
@@ -111,7 +111,7 @@ else:
   model.add(Dense(nb_actions))
   model.add(Activation('linear'))
   print(model.summary())
-  
+
 # Finally, we configure and compile our agent. You can use every built-in Keras optimizer and
 # even the metrics!
 memory = SequentialMemory(limit=1000000, window_length=WINDOW_LENGTH)
