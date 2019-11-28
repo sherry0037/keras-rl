@@ -1,6 +1,6 @@
 from keras.layers import Activation, Dense, Input
-from keras.layers import Conv2D, Flatten, MaxPooling2D
-from keras.layers import Reshape, Conv2DTranspose
+from keras.layers import Conv2D, Flatten, MaxPooling2D, LSTM
+from keras.layers import Reshape, Conv2DTranspose, TimeDistributed
 from keras.models import Model
 from keras.models import Sequential
 
@@ -39,10 +39,25 @@ def build(self):
   return model
 #------------------------------------------------------------------------------#
 
+# Not complete!!!!!
+class LSTMModel(NNModel):
+  def __init__(self, **kwargs):
+    super().__init__(**kwargs)
+    self.input_shape = (5, 84, 84, 1)
+
+  def build(self):
+    model = Sequential()
+    # define TimeDistributed CNN model
+    # Our sequence will be 5 consecutive rgb images
+    model.add(TimeDistributed(Conv2D(32, kernel_size=(5, 5), activation='relu', input_shape=(84, 84, 1)), input_shape = (84, 84, 1))
+    model.add(TimeDistributed(MaxPooling2D(pool_size=(2, 2), strides=(2, 2))))
+    model.add(TimeDistributed(Flatten()))
+    # define LSTM model
+    model.add(LSTM(128, activation='relu', recurrent_activation='sigmoid')
+    model.add(Dense(100))
+  
+
 #------------------------------------------------------------------------------#
-# is softmax only meant for classification?
-# beb
-# beb see this i am also reading this https://stats.stackexchange.com/questions/335836/cnn-architectures-for-regression
 
 class CNNModel2(NNModel):
   def __init__(self, **kwargs):
