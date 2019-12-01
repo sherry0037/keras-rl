@@ -22,6 +22,7 @@ from rl.memory import SequentialMemory
 from rl.core import Processor
 from rl.callbacks import FileLogger, ModelIntervalCheckpoint
 
+from rgb2ram.models import *
 
 INPUT_SHAPE = (84, 84)
 RAM_SHAPE = (128,)
@@ -29,12 +30,13 @@ WINDOW_LENGTH = 4
 
 
 class AtariProcessor(Processor):
-    def __init__(self, is_ram):
+    def __init__(self, is_ram, transfer_model=None):
         self.is_ram = is_ram
+        self.transfer_model = transfer_model
         super().__init__()
 
     def process_observation(self, observation):
-        if self.is_ram:
+        if self.is_ram and self.transfer_model is None:
             assert observation.ndim == 1
             assert observation.shape == RAM_SHAPE
             return observation.astype('uint8') # saves storage in experience memory
@@ -44,6 +46,7 @@ class AtariProcessor(Processor):
         img = img.resize(INPUT_SHAPE).convert('L')  # resize and convert to grayscale
         processed_observation = np.array(img)
         assert processed_observation.shape == INPUT_SHAPE
+
         return processed_observation.astype('uint8')  # saves storage in experience memory
 
     def process_state_batch(self, batch):
@@ -51,6 +54,11 @@ class AtariProcessor(Processor):
         # we would need to store a `float32` array instead, which is 4x more memory intensive than
         # an `uint8` array. This matters if we store 1M observations.
         processed_batch = batch.astype('float32') / 255.
+        if self.transfer_model is not None:
+            # processed_batch.shape = (1, 4, 84, 84)
+            processed_batch = processed_batch.reshape(-1, INPUT_SHAPE[0], INPUT_SHAPE[1], 1)  # (4, 84, 84, 1)
+            processed_batch = self.transfer_model.predict(processed_batch)
+            processed_batch = processed_batch.reshape(1, processed_batch.shape[0], processed_batch.shape[1])  # (1, 4, 128)
         return processed_batch
 
     def process_reward(self, reward):
@@ -113,9 +121,16 @@ parser.add_argument('--weights', type=str, default=None)
 parser.add_argument('--model', choices=['rgb', 'just_ram', 'big_ram'], default="just_ram",
                     help="Choose the network from rgb|just_ram|big_ram")
 parser.add_argument('--save_observations', action="store_true", default=False)
+parser.add_argument('--transfer', action="store_true", default=False,
+                    help="Set true to use transfer learning.")
 parser.add_argument('--steps', type=int, default=1750000)
 
 args = parser.parse_args()
+
+if args.transfer:
+    args.mode = 'test'
+    args.env_name = 'BreakoutDeterministic-v4'
+    args.model = 'just_ram'
 
 # Get the environment and extract the number of actions.
 env = gym.make(args.env_name)
@@ -132,7 +147,18 @@ print(model.summary())
 # Finally, we configure and compile our agent. You can use every built-in Keras optimizer and
 # even the metrics!
 memory = SequentialMemory(limit=1000000, window_length=WINDOW_LENGTH)
-processor = AtariProcessor("ram" in args.env_name)
+
+if args.transfer:
+    model_type = CNNModel2
+    layer_sizes = [0, 0]
+    transfer_model = model_type(layer_sizes=layer_sizes, model_type=model_type).build()
+    cwd = os.getcwd()
+    transfer_model.load_weights(os.path.join(cwd, "./rgb2ram/saved_model/CNNModel2.h5"))
+    print("RGB2RAM Model:")
+    print(transfer_model.summary())
+    processor = AtariProcessor(is_ram=True, transfer_model=transfer_model)
+else:
+    processor = AtariProcessor(is_ram="ram" in args.env_name)
 
 # Select a policy. We use eps-greedy action selection, which means that a random action is selected
 # with probability eps. We anneal eps from 1.0 to 0.1 over the course of 1M steps. This is done so that
@@ -183,7 +209,9 @@ if args.mode == 'train':
 elif args.mode == 'test':
     save_dir = "./saved_model/" + args.model
     weights_filename = 'dqn_{}_weights_{}.h5f'.format(args.env_name, args.steps)
+    if args.transfer:
+        weights_filename = 'dqn_Breakout-ramDeterministic-v4_weights_{}.h5f'.format(args.steps)
     if args.weights:
         weights_filename = args.weights
     dqn.load_weights(os.path.join(save_dir, weights_filename))
-    dqn.test(env, nb_episodes=20, visualize=False)
+    dqn.test(env, nb_episodes=20, visualize=True)
