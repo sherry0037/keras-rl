@@ -1,5 +1,9 @@
 """
 Train dqn model on Atari games and save RGB screenshots and RAM during training.
+
+Run `python examples/new_dqn_atari.py --transfer` to run tests on RGB environment use pretrained RAM model
+
+Run `python examples/new_dqn_atari.py --finetune` to use pretrained RAM model then fine-tune on RGB environment.
 """
 
 from __future__ import division
@@ -59,6 +63,7 @@ class AtariProcessor(Processor):
             processed_batch = processed_batch.reshape(-1, INPUT_SHAPE[0], INPUT_SHAPE[1], 1)  # (4, 84, 84, 1)
             processed_batch = self.transfer_model.predict(processed_batch)
             processed_batch = processed_batch.reshape(1, processed_batch.shape[0], processed_batch.shape[1])  # (1, 4, 128)
+            processed_batch[processed_batch<0] = 0
         return processed_batch
 
     def process_reward(self, reward):
@@ -123,6 +128,8 @@ parser.add_argument('--model', choices=['rgb', 'just_ram', 'big_ram'], default="
 parser.add_argument('--save_observations', action="store_true", default=False)
 parser.add_argument('--transfer', action="store_true", default=False,
                     help="Set true to use transfer learning.")
+parser.add_argument('--finetune', action="store_true", default=False,
+                    help="Set true to use transfer learning then fine tune.")
 parser.add_argument('--steps', type=int, default=1750000)
 
 args = parser.parse_args()
@@ -130,7 +137,12 @@ args = parser.parse_args()
 if args.transfer:
     args.mode = 'test'
     args.env_name = 'BreakoutDeterministic-v4'
-    args.model = 'just_ram'
+    args.model = 'big_ram'
+
+if args.finetune:
+    args.mode = 'train'
+    args.env_name = 'BreakoutDeterministic-v4'
+    args.model = 'big_ram'
 
 # Get the environment and extract the number of actions.
 env = gym.make(args.env_name)
@@ -148,7 +160,7 @@ print(model.summary())
 # even the metrics!
 memory = SequentialMemory(limit=1000000, window_length=WINDOW_LENGTH)
 
-if args.transfer:
+if args.transfer or args.finetune:
     model_type = CNNModel2
     layer_sizes = [0, 0]
     transfer_model = model_type(layer_sizes=layer_sizes, model_type=model_type).build()
@@ -189,6 +201,8 @@ if args.mode == 'train':
     # Okay, now it's time to learn something! We capture the interrupt exception so that training
     # can be prematurely aborted. Notice that now you can use the built-in Keras callbacks!
     save_dir = "./saved_model/" + args.model
+    if args.finetune:
+        save_dir = "./saved_model/" + args.model + "_finetune"
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     weights_filename = 'dqn_{}_weights.h5f'.format(args.env_name)
@@ -197,12 +211,17 @@ if args.mode == 'train':
     callbacks = [ModelIntervalCheckpoint(os.path.join(save_dir, checkpoint_weights_filename), interval=250000)]
     callbacks += [FileLogger(os.path.join(save_dir, log_filename), interval=100)]
 
+    if args.finetune:
+        pretrained_weights_filename = 'dqn_Breakout-ramDeterministic-v4_weights_1750000.h5f'
+        print("Load pre-trained weights {}.".format(pretrained_weights_filename))
+        dqn.load_weights(os.path.join("./saved_model/" + args.model, pretrained_weights_filename))
+
     # Use new_fit to save both RGB and RAM during training
     # Use fit to train normally
     if args.save_observations:
-        dqn.new_fit(env, callbacks=callbacks, nb_steps=1750000, log_interval=10000, verbose=2)
+        dqn.new_fit(env, callbacks=callbacks, nb_steps=args.steps, log_interval=10000, verbose=2)
     else:
-        dqn.fit(env, callbacks=callbacks, nb_steps=1750000, log_interval=10000, verbose=2)
+        dqn.fit(env, callbacks=callbacks, nb_steps=args.steps, log_interval=10000, verbose=2)
 
     # Finally, evaluate our algorithm for 10 episodes.
     dqn.test(env, nb_episodes=20, visualize=False)
@@ -214,4 +233,4 @@ elif args.mode == 'test':
     if args.weights:
         weights_filename = args.weights
     dqn.load_weights(os.path.join(save_dir, weights_filename))
-    dqn.test(env, nb_episodes=20, visualize=True)
+    dqn.test(env, nb_episodes=20, visualize=False)
