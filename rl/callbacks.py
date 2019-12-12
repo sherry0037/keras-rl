@@ -205,13 +205,6 @@ class TrainEpisodeLogger(Callback):
             'obs_max': np.max(self.observations[episode]),
             'metrics': metrics_text,
         }
-        #
-        # so every 10th epsiode (line 216)
-        # so save_rgb_array is called and now that function is on line 126
-        # let's go to that line?
-        # i just saw. why not use that function only?
-        # i copied from that function only yea
-        # wait come to line 126
         print(template.format(**variables))
         if "new" in logs.keys():
             if episode % 10 == 0:
