@@ -26,17 +26,17 @@ class NNModel(ABC):
 
 #------------------------------------------------------------------------------#
 class FFModel(NNModel):
-  def __init__(self, **kwargs):
-    super().__init__(**kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
-def build(self):
-  model = Sequential()
-  model.add(Dense(self.layer_sizes[0], input_dim=self.input_shape,
-                  kernel_initializer='normal', activation='relu'))
-  for i in range(1, len(self.layer_sizes)):
-    model.add(Dense(self.layer_sizes[i], activation = 'relu'))
-  model.add(Dense(self.output_shape, activation='linear'))
-  return model
+    def build(self):
+        model = Sequential()
+        model.add(Dense(self.layer_sizes[0], input_dim=self.input_shape,
+                        kernel_initializer='normal', activation='relu'))
+        for i in range(1, len(self.layer_sizes)):
+            model.add(Dense(self.layer_sizes[i], activation = 'relu'))
+        model.add(Dense(self.output_shape, activation='linear'))
+        return model
 #------------------------------------------------------------------------------#
 
 # Not complete!!!!!
@@ -49,11 +49,11 @@ class LSTMModel(NNModel):
     model = Sequential()
     # define TimeDistributed CNN model
     # Our sequence will be 5 consecutive rgb images
-    model.add(TimeDistributed(Conv2D(32, kernel_size=(5, 5), activation='relu', input_shape=(84, 84, 1)), input_shape = (84, 84, 1))
+    model.add(TimeDistributed(Conv2D(32, kernel_size=(5, 5), activation='relu', input_shape=(84, 84, 1)), input_shape = (84, 84, 1)))
     model.add(TimeDistributed(MaxPooling2D(pool_size=(2, 2), strides=(2, 2))))
     model.add(TimeDistributed(Flatten()))
     # define LSTM model
-    model.add(LSTM(128, activation='relu', recurrent_activation='sigmoid')
+    model.add(LSTM(128, activation='relu', recurrent_activation='sigmoid'))
     model.add(Dense(100))
   
 

@@ -34,9 +34,10 @@ WINDOW_LENGTH = 4
 
 
 class AtariProcessor(Processor):
-    def __init__(self, is_ram, transfer_model=None):
+    def __init__(self, is_ram, transfer_model=None, transfer_model_name="cnn"):
         self.is_ram = is_ram
         self.transfer_model = transfer_model
+        self.transfer_model_name = transfer_model_name
         super().__init__()
 
     def process_observation(self, observation):
@@ -59,11 +60,18 @@ class AtariProcessor(Processor):
         # an `uint8` array. This matters if we store 1M observations.
         processed_batch = batch.astype('float32') / 255.
         if self.transfer_model is not None:
-            # processed_batch.shape = (1, 4, 84, 84)
-            processed_batch = processed_batch.reshape(-1, INPUT_SHAPE[0], INPUT_SHAPE[1], 1)  # (4, 84, 84, 1)
-            processed_batch = self.transfer_model.predict(processed_batch)
-            processed_batch = processed_batch.reshape(1, processed_batch.shape[0], processed_batch.shape[1])  # (1, 4, 128)
-            processed_batch[processed_batch<0] = 0
+            if self.transfer_model_name == "cnn":
+                # processed_batch.shape = (1, 4, 84, 84)
+                processed_batch = processed_batch.reshape(-1, INPUT_SHAPE[0], INPUT_SHAPE[1], 1)  # (4, 84, 84, 1)
+                processed_batch = self.transfer_model.predict(processed_batch)
+                processed_batch = processed_batch.reshape(1, processed_batch.shape[0], processed_batch.shape[1])  # (1, 4, 128)
+                processed_batch[processed_batch<0] = 0
+            elif self.transfer_model_name == "ff":
+                processed_batch = processed_batch.reshape(-1, INPUT_SHAPE[0]*INPUT_SHAPE[1])  # (4, 84, 84, 1)
+                processed_batch = self.transfer_model.predict(processed_batch)
+                processed_batch = processed_batch.reshape(1, processed_batch.shape[0],
+                                                          processed_batch.shape[1])  # (1, 4, 128)
+                processed_batch[processed_batch < 0] = 0
         return processed_batch
 
     def process_reward(self, reward):
@@ -125,6 +133,8 @@ parser.add_argument('--env-name', type=str, default='Breakout-ramDeterministic-v
 parser.add_argument('--weights', type=str, default=None)
 parser.add_argument('--model', choices=['rgb', 'just_ram', 'big_ram'], default="just_ram",
                     help="Choose the network from rgb|just_ram|big_ram")
+parser.add_argument('--transfer_model', choices=['cnn', 'ff'], default="cnn",
+                    help="Choose the RGB2RAM model")
 parser.add_argument('--save_observations', action="store_true", default=False)
 parser.add_argument('--transfer', action="store_true", default=False,
                     help="Set true to use transfer learning.")
@@ -136,12 +146,15 @@ args = parser.parse_args()
 
 if args.transfer:
     args.mode = 'test'
-    args.env_name = 'BreakoutDeterministic-v4'
+    #args.env_name = 'BreakoutDeterministic-v4'
+    args.env_name = 'Breakout-v4'
     args.model = 'big_ram'
+    #args.model = 'just_ram'
 
 if args.finetune:
     args.mode = 'train'
-    args.env_name = 'BreakoutDeterministic-v4'
+    #args.env_name = 'BreakoutDeterministic-v4'
+    args.env_name = 'Breakout-v4'
     args.model = 'big_ram'
 
 # Get the environment and extract the number of actions.
@@ -161,14 +174,19 @@ print(model.summary())
 memory = SequentialMemory(limit=1000000, window_length=WINDOW_LENGTH)
 
 if args.transfer or args.finetune:
-    model_type = CNNModel2
-    layer_sizes = [0, 0]
-    transfer_model = model_type(layer_sizes=layer_sizes, model_type=model_type).build()
-    cwd = os.getcwd()
-    transfer_model.load_weights(os.path.join(cwd, "./rgb2ram/saved_model/CNNModel2.h5"))
+    if args.transfer_model == "cnn":
+        model_type = CNNModel2
+        layer_sizes = [0, 0]
+        transfer_model = model_type(layer_sizes=layer_sizes, model_type=model_type).build()
+        transfer_model.load_weights("./rgb2ram/saved_model/CNNModel2.h5")
+    elif args.transfer_model == "ff":
+        model_type = FFModel
+        transfer_model = model_type(model_type=model_type).build()
+        transfer_model.load_weights("./rgb2ram/saved_model/FFModel.h5")
     print("RGB2RAM Model:")
     print(transfer_model.summary())
-    processor = AtariProcessor(is_ram=True, transfer_model=transfer_model)
+    processor = AtariProcessor(is_ram=True, transfer_model=transfer_model,
+                               transfer_model_name=args.transfer_model)
 else:
     processor = AtariProcessor(is_ram="ram" in args.env_name)
 
@@ -212,7 +230,8 @@ if args.mode == 'train':
     callbacks += [FileLogger(os.path.join(save_dir, log_filename), interval=100)]
 
     if args.finetune:
-        pretrained_weights_filename = 'dqn_Breakout-ramDeterministic-v4_weights_1750000.h5f'
+        #pretrained_weights_filename = 'dqn_Breakout-ramDeterministic-v4_weights_1750000.h5f'
+        pretrained_weights_filename = 'dqn_Breakout-ram-v4_weights_1750000.h5f'
         print("Load pre-trained weights {}.".format(pretrained_weights_filename))
         dqn.load_weights(os.path.join("./saved_model/" + args.model, pretrained_weights_filename))
 
@@ -229,7 +248,8 @@ elif args.mode == 'test':
     save_dir = "./saved_model/" + args.model
     weights_filename = 'dqn_{}_weights_{}.h5f'.format(args.env_name, args.steps)
     if args.transfer:
-        weights_filename = 'dqn_Breakout-ramDeterministic-v4_weights_{}.h5f'.format(args.steps)
+        #weights_filename = 'dqn_Breakout-ramDeterministic-v4_weights_{}.h5f'.format(args.steps)
+        weights_filename = 'dqn_Breakout-ram-v4_weights_{}.h5f'.format(args.steps)
     if args.weights:
         weights_filename = args.weights
     dqn.load_weights(os.path.join(save_dir, weights_filename))
