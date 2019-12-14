@@ -151,12 +151,18 @@ def read_image(image_path):
 
 def plot_history(history):
   print(history.history.keys())
-  plt.plot(history.history['loss'])
-  plt.plot(history.history['val_loss'])
-  plt.title('model loss')
+  # dict_keys(['val_loss', 'val_mse', 'val_mae', 'loss', 'mse', 'mae'])
+  plt.plot(history.history['mse'])
+  plt.plot(history.history['val_mse'])
   plt.ylabel('loss')
   plt.xlabel('epoch')
-  plt.legend(['train', 'validation'], loc='upper left')
+  plt.legend(['train MSE', 'val MSE'], loc='upper left')
+  plt.show()
+  plt.plot(history.history['mae'], color = 'm')
+  plt.plot(history.history['val_mae'], color = 'g')
+  plt.ylabel('loss')
+  plt.xlabel('epoch')
+  plt.legend(['train MAE', 'val MAE'], loc='upper left')
   plt.show()
 
 def save_model(model, model_type):
