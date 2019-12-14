@@ -35,13 +35,18 @@ between the two inputs to make use of the already-trained model.)
 
 ## Implementation and Usages
 
-1. `dqn_double.py` defines an dqn agent that records both RGB and RAM in callbacks during training.
+1. `new_dqn.py` defines an dqn agent that records both RGB and RAM in callbacks during training.
 
-    Run `python examples/dqn_atari_double.py` to train a model on RGB and save observations.
+    Run `python examples/new_dqn_atari.py` to train a model on RGB and save observations.
     
     TODO: change this to train a model on RAM.
     
     Change the frequency of saving observations on line 212 in `rl/callbacks.py`.
+ 
+ 2. Run `python examples/new_dqn_atari.py --help` to see how to use transfer learning models to train RL agent.
+    eg. `python3 examples/new_dqn_atari.py --transfer --transfer_model ff`
+ 
+ 3. Go to rgb2ram directory, run `python3 train.py` to learn mapping between RGB and RAM
     
 ## Next steps:
 
