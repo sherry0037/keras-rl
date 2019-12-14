@@ -26,9 +26,9 @@ class NNModel(ABC):
 
 #------------------------------------------------------------------------------#
 class FFModel(NNModel):
-  def __init__(self, **kwargs):
-    super().__init__(**kwargs)
-
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        
   def build(self):
     model = Sequential()
     model.add(Dense(self.layer_sizes[0], input_dim=self.input_shape,
@@ -62,8 +62,6 @@ class LSTMModel(NNModel):
     model = Sequential()
     model.add(TimeDistributed(cnn, input_shape = (self.seq_length,84,84,1)))
     model.add(lstm)
-    return model
-  
     return model
 #------------------------------------------------------------------------------#
 

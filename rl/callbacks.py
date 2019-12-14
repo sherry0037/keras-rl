@@ -205,7 +205,7 @@ class TrainEpisodeLogger(Callback):
             'obs_max': np.max(self.observations[episode]),
             'metrics': metrics_text,
         }
-
+        
         print(template.format(**variables))
         if "new" in logs.keys():
             if episode % 10 == 0:
