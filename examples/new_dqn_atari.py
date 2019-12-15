@@ -65,13 +65,18 @@ class AtariProcessor(Processor):
                 processed_batch = processed_batch.reshape(-1, INPUT_SHAPE[0], INPUT_SHAPE[1], 1)  # (4, 84, 84, 1)
                 processed_batch = self.transfer_model.predict(processed_batch)
                 processed_batch = processed_batch.reshape(1, processed_batch.shape[0], processed_batch.shape[1])  # (1, 4, 128)
-                processed_batch[processed_batch<0] = 0
+                #processed_batch[processed_batch<0] = 0
             elif self.transfer_model_name == "ff":
                 processed_batch = processed_batch.reshape(-1, INPUT_SHAPE[0]*INPUT_SHAPE[1])  # (4, 84, 84, 1)
                 processed_batch = self.transfer_model.predict(processed_batch)
                 processed_batch = processed_batch.reshape(1, processed_batch.shape[0],
                                                           processed_batch.shape[1])  # (1, 4, 128)
                 processed_batch[processed_batch < 0] = 0
+            elif self.transfer_model_name == "lstm":
+                processed_batch = processed_batch.reshape(1, -1, INPUT_SHAPE[0], INPUT_SHAPE[1], 1)  # (1, 4, 84, 84, 1)
+                #processed_batch = processed_batch[:, 1:, :, :, :] # (1, 3, 84, 84, 1)
+                processed_batch = self.transfer_model.predict(processed_batch)
+                #processed_batch = processed_batch.reshape(1, processed_batch.shape[0], processed_batch.shape[1])  # (1, 4, 128)
         return processed_batch
 
     def process_reward(self, reward):
@@ -133,7 +138,7 @@ parser.add_argument('--env-name', type=str, default='Breakout-ramDeterministic-v
 parser.add_argument('--weights', type=str, default=None)
 parser.add_argument('--model', choices=['rgb', 'just_ram', 'big_ram'], default="just_ram",
                     help="Choose the network from rgb|just_ram|big_ram")
-parser.add_argument('--transfer_model', choices=['cnn', 'ff'], default="cnn",
+parser.add_argument('--transfer_model', choices=['cnn', 'ff', 'lstm'], default="cnn",
                     help="Choose the RGB2RAM model")
 parser.add_argument('--save_observations', action="store_true", default=False)
 parser.add_argument('--transfer', action="store_true", default=False,
@@ -183,6 +188,10 @@ if args.transfer or args.finetune:
         model_type = FFModel
         transfer_model = model_type(model_type=model_type).build()
         transfer_model.load_weights("./rgb2ram/saved_model/FFModel.h5")
+    elif args.transfer_model == "lstm":
+        model_type = LSTMModel
+        transfer_model = model_type(model_type=model_type).build()
+        transfer_model.load_weights("./rgb2ram/saved_model/LSTMModel.h5")
     print("RGB2RAM Model:")
     print(transfer_model.summary())
     processor = AtariProcessor(is_ram=True, transfer_model=transfer_model,
