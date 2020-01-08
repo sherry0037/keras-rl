@@ -208,9 +208,9 @@ class TrainEpisodeLogger(Callback):
         
         print(template.format(**variables))
         if "new" in logs.keys():
-            if episode % 10 == 0:
+            if episode % 1 == 0:
                 for i, image in enumerate(self.observations[episode]):
-                    if i % 20 == 0:
+                    if i % 1 == 0:
                         save_rgb_array(image, output_dir="./train_history/environments/rgb/",
                                        filename="rgb_epi_{}_step_{}".format(episode, i))
                         ram = self.observations_ram[episode][i]

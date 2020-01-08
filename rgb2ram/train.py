@@ -10,7 +10,7 @@ model_type = LSTMModel
 save_data = False
 train_split = 0.8
 layer_sizes = [32, 64] # reqd only for FFNN
-seq_length = 3 #reqd only for LSTM
+seq_length = 10 #reqd only for LSTM
 batch_size = 8
 num_epochs = 60
 
@@ -20,8 +20,8 @@ x_train, y_train, x_test, y_test = utils.load_data(model_type, train_split, save
 
 # Normalization
 mean_train, sigma_train = np.mean(x_train, axis=0), np.std(x_train, axis=0)
-x_train = (x_train - mean_train)
-x_test = (x_test - mean_train)
+# x_train = (x_train - mean_train)
+# x_test = (x_test - mean_train)
 
 if model_type == LSTMModel:
   x_train = x_train[:(x_train.shape[0]-(x_train.shape[0] % seq_length))]
