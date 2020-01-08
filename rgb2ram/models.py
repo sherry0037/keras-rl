@@ -26,13 +26,13 @@ class NNModel(ABC):
 
 #------------------------------------------------------------------------------#
 class FFModel(NNModel):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+  def __init__(self, **kwargs):
+    super().__init__(**kwargs)
         
   def build(self):
     model = Sequential()
     model.add(Dense(self.layer_sizes[0], input_dim=self.input_shape,
-                  kernel_initializer='normal', activation='relu'))
+              kernel_initializer='normal', activation='relu'))
     for i in range(1, len(self.layer_sizes)):
       model.add(Dense(self.layer_sizes[i], activation = 'relu'))
     model.add(Dense(self.output_shape, activation='linear'))
