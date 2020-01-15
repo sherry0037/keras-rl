@@ -156,6 +156,9 @@ env_name_rgb = None
 if args.game_name == 'Breakout':
     env_name_ram = 'Breakout-ram-v4'
     env_name_rgb = 'Breakout-v4'
+if args.game_name == 'Seaquest':
+    env_name_ram = 'Seaquest-ram-v4'
+    env_name_rgb = 'Seaquest-v4'
 
 # Get the environment and extract the number of actions.
 if args.mode == 'train' or args.mode == 'test':
@@ -223,11 +226,9 @@ if args.mode == 'train':
     # Okay, now it's time to learn something! We capture the interrupt exception so that training
     # can be prematurely aborted. Notice that now you can use the built-in Keras callbacks!
     save_dir = "./saved_model/" + args.rl_agent
-    if args.finetune:
-        save_dir = "./saved_model/" + args.rl_agent + "_finetune"
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    weights_filename = 'dqn_{}_weights.h5f'.format(args.env_name)
+    weights_filename = 'dqn_{}_weights.h5f'.format(env_name_ram)
     checkpoint_weights_filename = 'dqn_' + env_name_ram + '_weights_{step}.h5f'
     log_filename = 'dqn_{}_log.json'.format(env_name_ram)
     callbacks = [ModelIntervalCheckpoint(os.path.join(save_dir, checkpoint_weights_filename), interval=250000)]
