@@ -37,9 +37,13 @@ between the two inputs to make use of the already-trained model.)
 
 1. `new_dqn.py` defines an dqn agent that records both RGB and RAM in callbacks during training.
 
-    Run `python examples/save_atari_observations.py` to train a model on RGB and save observations.
+    - Run `python examples/save_atari_observations.py [--game Breakout]` to train a model on RGB and save observations.
     
-    Change the frequency of saving observations on line 212 in `rl/callbacks.py`.
+    - To specify the frequency of saving observations, run with options:
+    
+        `python examples/save_atari_observations.py --save_every_episode 10 --save_every_step 20`
+        
+    - Currently we only support Breakout and Seaquest
  
  2. Run `python examples/new_dqn_atari.py --help` to see how to use transfer learning models to train RL agent.
     

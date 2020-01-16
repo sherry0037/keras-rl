@@ -207,15 +207,18 @@ class TrainEpisodeLogger(Callback):
         }
         
         print(template.format(**variables))
-        if "new" in logs.keys():
-            if episode % 1 == 0:
+        if "save_observations" in logs.keys():
+            save_every_episode = logs.get("save_every_episode", 1)
+            save_every_step = logs.get("save_every_step", 1)
+            env_name = logs.get("env_name", "Unknown")
+            if episode % save_every_episode == 0:
                 for i, image in enumerate(self.observations[episode]):
-                    if i % 1 == 0:
-                        save_rgb_array(image, output_dir="./train_history/environments/rgb/",
+                    if i % save_every_step == 0:
+                        save_rgb_array(image, output_dir="./train_history/environments/{}/rgb/".format(env_name),
                                        filename="rgb_epi_{}_step_{}".format(episode, i))
                         ram = self.observations_ram[episode][i]
                         ram = np.reshape(ram, (1, -1))
-                        save_rgb_array(ram, output_dir="./train_history/environments/ram/",
+                        save_rgb_array(ram, output_dir="./train_history/environments/{}/ram/".format(env_name),
                                        filename="ram_epi_{}_step_{}".format(episode, i))
 
         # Free up resources.

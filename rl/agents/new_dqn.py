@@ -24,7 +24,7 @@ class NewDQNAgent(DQNAgent):
 
     def new_fit(self, env, nb_steps, action_repetition=1, callbacks=None, verbose=1,
                    visualize=False, nb_max_start_steps=0, start_step_policy=None, log_interval=10000,
-                   nb_max_episode_steps=None):
+                   nb_max_episode_steps=None, save_every_episode=1, save_every_step=1):
         """Trains the agent on the given environment.
         Save both RGB images and RAM to /train_history/environments/
 
@@ -195,7 +195,10 @@ class NewDQNAgent(DQNAgent):
                         'episode_reward': episode_reward,
                         'nb_episode_steps': episode_step,
                         'nb_steps': self.step,
-                        'new': True,
+                        'save_observations': True,
+                        'save_every_episode': save_every_episode,
+                        'save_every_step': save_every_step,
+                        'env_name': env.unwrapped.spec.id
                     }
                     callbacks.on_episode_end(episode, episode_logs)
 

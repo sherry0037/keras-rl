@@ -43,13 +43,21 @@ class AtariProcessor(Processor):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--mode', choices=['train', 'test'], default='train')
-parser.add_argument('--env-name', type=str, default='BreakoutDeterministic-v4')
+parser.add_argument('--game_name', choices=['Breakout', 'Seaquest'], default='Breakout')
 parser.add_argument('--weights', type=str, default=None)
 parser.add_argument('--steps', type=int, default=1750000)
+parser.add_argument('--save_every_episode', type=int, default=5)
+parser.add_argument('--save_every_step', type=int, default=5)
 args = parser.parse_args()
 
+env_name = None
+if args.game_name == 'Breakout':
+    env_name = 'Breakout-v4'
+if args.game_name == 'Seaquest':
+    env_name = 'Seaquest-v4'
+
 # Get the environment and extract the number of actions.
-env = gym.make(args.env_name)
+env = gym.make(env_name)
 np.random.seed(123)
 env.seed(123)
 nb_actions = env.action_space.n
@@ -105,12 +113,13 @@ dqn.compile(Adam(lr=.00025), metrics=['mae'])
 if args.mode == 'train':
     # Okay, now it's time to learn something! We capture the interrupt exception so that training
     # can be prematurely aborted. Notice that now you can use the built-in Keras callbacks!
-    weights_filename = 'dqn_{}_weights.h5f'.format(args.env_name)
-    checkpoint_weights_filename = 'dqn_' + args.env_name + '_weights_{step}.h5f'
-    log_filename = 'dqn_{}_log.json'.format(args.env_name)
+    weights_filename = 'dqn_{}_weights.h5f'.format(env_name)
+    checkpoint_weights_filename = 'dqn_' + env_name + '_weights_{step}.h5f'
+    log_filename = 'dqn_{}_log.json'.format(env_name)
     callbacks = [ModelIntervalCheckpoint(checkpoint_weights_filename, interval=250000)]
     callbacks += [FileLogger(log_filename, interval=100)]
-    dqn.new_fit(env, callbacks=callbacks, nb_steps=args.steps, log_interval=10000, verbose=2)
+    dqn.new_fit(env, callbacks=callbacks, nb_steps=args.steps, log_interval=10000, verbose=2,
+                save_every_episode=args.save_every_episode, save_every_step=args.save_every_step)
 
     # After training is done, we save the final weights one more time.
     dqn.save_weights(weights_filename, overwrite=True)
@@ -118,7 +127,7 @@ if args.mode == 'train':
     # Finally, evaluate our algorithm for 10 episodes.
     dqn.test(env, nb_episodes=10, visualize=False)
 elif args.mode == 'test':
-    weights_filename = 'dqn_{}_weights.h5f'.format(args.env_name)
+    weights_filename = 'dqn_{}_weights.h5f'.format(env_name)
     if args.weights:
         weights_filename = args.weights
     dqn.load_weights(weights_filename)
