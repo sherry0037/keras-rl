@@ -6,18 +6,20 @@ from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
 
-def get_datasets():
+def get_datasets(game_name):
   # Copy images and rams from ../train_history/environments and save to "rgb_ram.npz"
 
-  SOURCE_RGB_DIR = "../train_history/environments/rgb"
-  SOURCE_RAM_DIR = "../train_history/environments/ram"
+  SOURCE_RGB_DIR = "../train_history/environments/{}-v4/rgb".format(game_name)
+  SOURCE_RAM_DIR = "../train_history/environments/{}-v4/ram".format(game_name)
 
   assert(len(os.listdir(SOURCE_RGB_DIR)) == len(os.listdir(SOURCE_RAM_DIR)))
 
   rgb_files = []; rgb_filenames = []
   ram_files = []; ram_filenames = []
-  for rgb_file, ram_file in zip(os.listdir(SOURCE_RGB_DIR), os.listdir(SOURCE_RAM_DIR)):
-    assert(rgb_file == ram_file)
+  for rgb_file, ram_file in zip(sorted(os.listdir(SOURCE_RGB_DIR)),
+                                sorted(os.listdir(SOURCE_RAM_DIR))):
+    #print(rgb_file, ram_file)
+    assert(rgb_file[3:] == ram_file[3:])
     rgb_files.append(read_image(os.path.join(SOURCE_RGB_DIR, rgb_file)))
     ram_files.append(read_image(os.path.join(SOURCE_RAM_DIR, ram_file)))
     rgb_filenames.append(rgb_file)
@@ -26,12 +28,14 @@ def get_datasets():
   rgb_files = np.array(rgb_files)
   ram_files = np.array(ram_files)
 
-  np.savez("rgb_ram", rgb = rgb_files, ram = ram_files, rgb_names = rgb_filenames, ram_names = ram_filenames)
+  if not os.path.exists("data/{}-v4/".format(game_name)):
+    os.makedirs("data/{}-v4/".format(game_name))
 
-def load_data(model_type = None, split = 0.8, is_save_data = False):
+  np.savez("data/{}-v4/rgb_ram".format(game_name), rgb=rgb_files, ram=ram_files, rgb_names=rgb_filenames, ram_names=ram_filenames)
+
+def load_data(game_name, model_type = None, split = 0.8, is_save_data = False):
   # Get train and val data and flatten them if FeedForward NN is the model
-
-  x_train, y_train, x_test, y_test = load_datasets(is_save_data, split)
+  x_train, y_train, x_test, y_test = load_datasets(is_save_data, split, game_name)
   input_dim = 84 * 84
 
   if model_type and "FFModel" in model_type.__name__:
@@ -43,11 +47,11 @@ def load_data(model_type = None, split = 0.8, is_save_data = False):
 
   return x_train, y_train, x_test, y_test
 
-def load_datasets(is_save_data, split):
+def load_datasets(is_save_data, split, game_name):
   # load data from "rgb_ram.npz" and split into train and val
 
   random.seed(42)
-  ldata = np.load("rgb_ram.npz")
+  ldata = np.load("data/{}-v4/rgb_ram.npz".format(game_name))
   data = list(zip(ldata['rgb'], ldata['ram'], ldata['rgb_names'], ldata['ram_names']))
 
   random.shuffle(data)
@@ -149,7 +153,9 @@ def read_image(image_path):
   pixel_values = np.array(pixel_values).reshape((width, height, channels))
   return pixel_values
 
-def plot_history(history):
+def plot_history(history, figure_name):
+  if not os.path.exists('saved_figures/'):
+      os.makedirs('saved_figures/')
   print(history.history.keys())
   # dict_keys(['val_loss', 'val_mse', 'val_mae', 'loss', 'mse', 'mae'])
   plt.plot(history.history['mse'])
@@ -157,25 +163,28 @@ def plot_history(history):
   plt.ylabel('loss')
   plt.xlabel('epoch')
   plt.legend(['train MSE', 'val MSE'], loc='upper left')
-  plt.show()
+  #plt.show()
+  plt.savefig('saved_figures/{}_MSE.png'.format(figure_name))
   plt.plot(history.history['mae'], color = 'm')
   plt.plot(history.history['val_mae'], color = 'g')
   plt.ylabel('loss')
   plt.xlabel('epoch')
   plt.legend(['train MAE', 'val MAE'], loc='upper left')
-  plt.show()
+  #plt.show()
+  plt.savefig('saved_figures/{}_MAE.png'.format(figure_name))
+  print('Figures have been save to "saved_figures/"')
 
-def save_model(model, model_type):
+
+def save_model(model, model_type, model_path="./saved_model/"):
   # serialize model to JSON
-  model_path = "./saved_model/"
   if not os.path.exists(model_path):
       os.makedirs(model_path)
   model_json = model.to_json()
-  with open(model_path + model_type.__name__ + ".json", "w") as json_file:
+  with open(os.path.join(model_path, model_type.__name__ + ".json"), "w") as json_file:
       json_file.write(model_json)
   # serialize weights to HDF5
   model.save_weights(model_path+ model_type.__name__ + ".h5")
   print("Saved model to disk")
 
 if __name__ == "__main__":
-  get_datasets()
+  get_datasets("Seaquest")
