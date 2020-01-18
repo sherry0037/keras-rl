@@ -183,7 +183,7 @@ def save_model(model, model_type, model_path="./saved_model/"):
   with open(os.path.join(model_path, model_type.__name__ + ".json"), "w") as json_file:
       json_file.write(model_json)
   # serialize weights to HDF5
-  model.save_weights(model_path+ model_type.__name__ + ".h5")
+  model.save_weights(os.path.join(model_path, model_type.__name__ + ".h5"))
   print("Saved model to disk")
 
 if __name__ == "__main__":
