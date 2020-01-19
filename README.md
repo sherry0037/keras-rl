@@ -47,7 +47,7 @@ between the two inputs to make use of the already-trained model.)
  
  2. Run `python examples/new_dqn_atari.py --help` to see how to use transfer learning models to train RL agent.
     
-    eg. `python3 examples/new_dqn_atari.py --mode transfer --game Breakout --transfer_model ff`
+    eg. `python3 examples/new_dqn_atari.py --mode transfer --game_name Breakout --transfer_model cnn2 --rl_agent big_ram`
  
  3. Go to rgb2ram directory, run `python3 train.py` to learn mapping between RGB and RAM
     
