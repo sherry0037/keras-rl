@@ -61,7 +61,7 @@ class AtariProcessor(Processor):
         # an `uint8` array. This matters if we store 1M observations.
         processed_batch = batch.astype('float32') / 255.
         if self.transfer_model is not None:
-            if self.transfer_model_name == "cnn":
+            if self.transfer_model_name == "cnn1" or self.transfer_model_name == "cnn2":
                 # processed_batch.shape = (1, 4, 84, 84)
                 processed_batch = processed_batch.reshape(-1, INPUT_SHAPE[0], INPUT_SHAPE[1], 1)  # (4, 84, 84, 1)
                 processed_batch = self.transfer_model.predict(processed_batch)
@@ -143,7 +143,7 @@ parser.add_argument('--game_name', type=str, default='Breakout')
 parser.add_argument('--weights', type=str, default=None, help="Test results of a saved model")
 parser.add_argument('--rl_agent', choices=['rgb', 'just_ram', 'big_ram'], default="just_ram",
                     help="Choose the network for the rl agent from rgb|just_ram|big_ram")
-parser.add_argument('--transfer_model', choices=['cnn', 'ff', 'lstm'], default="cnn",
+parser.add_argument('--transfer_model', choices=['cnn1', 'cnn2', 'ff', 'lstm'], default="cnn",
                     help="Choose the RGB2RAM model")
 parser.add_argument('--transfer_model_dir', default="./rgb2ram/saved_model/",
                     help="Directory where the RGB2RAM model is saved")
@@ -183,19 +183,24 @@ print(model.summary())
 memory = SequentialMemory(limit=1000000, window_length=WINDOW_LENGTH)
 
 if args.mode == "transfer":
-    if args.transfer_model == "cnn":
+    if args.transfer_model == "cnn2":
         model_type = CNNModel2
         layer_sizes = [0, 0]
         transfer_model = model_type(layer_sizes=layer_sizes, model_type=model_type).build()
-        transfer_model.load_weights(os.path.join(args.transfer_model_dir, 'CNNModel2.h5'))
+        transfer_model.load_weights(os.path.join(args.transfer_model_dir, args.game_name, 'CNNModel2.h5'))
+    elif args.transfer_model == "cnn1":
+        model_type = CNNModel1
+        layer_sizes = [0, 0]
+        transfer_model = model_type(layer_sizes=layer_sizes, model_type=model_type).build()
+        transfer_model.load_weights(os.path.join(args.transfer_model_dir, args.game_name, 'CNNModel1.h5'))
     elif args.transfer_model == "ff":
         model_type = FFModel
         transfer_model = model_type(model_type=model_type).build()
-        transfer_model.load_weights(os.path.join(args.transfer_model_dir, 'FFModel.h5'))
+        transfer_model.load_weights(os.path.join(args.transfer_model_dir, args.game_name, 'FFModel.h5'))
     elif args.transfer_model == "lstm":
         model_type = LSTMModel
         transfer_model = model_type(model_type=model_type).build()
-        transfer_model.load_weights(os.path.join(args.transfer_model_dir, 'LSTMModel.h5'))
+        transfer_model.load_weights(os.path.join(args.transfer_model_dir, args.game_name, 'LSTMModel.h5'))
     print("RGB2RAM Model:")
     print(transfer_model.summary())
     processor = AtariProcessor(is_ram=True, transfer_model=transfer_model,
