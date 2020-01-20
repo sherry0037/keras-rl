@@ -183,26 +183,17 @@ print(model.summary())
 memory = SequentialMemory(limit=1000000, window_length=WINDOW_LENGTH)
 
 if args.mode == "transfer":
-    if args.transfer_model == "cnn2":
-        model_type = CNNModel2
-        layer_sizes = [0, 0]
-        transfer_model = model_type(layer_sizes=layer_sizes, model_type=model_type).build()
-        transfer_model.load_weights(os.path.join(args.transfer_model_dir, args.game_name, 'CNNModel2.h5'))
-    elif args.transfer_model == "cnn1":
-        model_type = CNNModel1
-        layer_sizes = [0, 0]
-        transfer_model = model_type(layer_sizes=layer_sizes, model_type=model_type).build()
-        transfer_model.load_weights(os.path.join(args.transfer_model_dir, args.game_name, 'CNNModel1.h5'))
-    elif args.transfer_model == "ff":
-        model_type = FFModel
-        transfer_model = model_type(model_type=model_type).build()
-        transfer_model.load_weights(os.path.join(args.transfer_model_dir, args.game_name, 'FFModel.h5'))
-    elif args.transfer_model == "lstm":
-        model_type = LSTMModel
-        transfer_model = model_type(model_type=model_type).build()
-        transfer_model.load_weights(os.path.join(args.transfer_model_dir, args.game_name, 'LSTMModel.h5'))
+    if args.transfer_model == "ff": model_type = FFModel
+    elif args.transfer_model == "lstm": model_type = LSTMModel
+    elif args.transfer_model == "cnn1": model_type = CNNModel1
+    elif args.transfer_model == "cnn2": model_type = CNNModel2
+
+    transfer_model = model_type(model_type=model_type).build()
+    transfer_model.load_weights(os.path.join(args.transfer_model_dir, args.game_name, model_type.__name__ + '.h5'))
+
     print("RGB2RAM Model:")
     print(transfer_model.summary())
+    
     processor = AtariProcessor(is_ram=True, transfer_model=transfer_model,
                                transfer_model_name=args.transfer_model)
 else:

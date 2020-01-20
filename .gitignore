@@ -1,3 +1,7 @@
+# training data
+rgb2ram/data/
+train_history/
+
 # OS X
 .DS_Store
 docs/site/*

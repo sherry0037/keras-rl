@@ -18,7 +18,8 @@ def get_datasets(game_name):
   ram_files = []; ram_filenames = []
   for rgb_file, ram_file in zip(sorted(os.listdir(SOURCE_RGB_DIR)),
                                 sorted(os.listdir(SOURCE_RAM_DIR))):
-    #print(rgb_file, ram_file)
+    # print(rgb_file, ram_file)
+    if rgb_file.startswith('.'): continue
     assert(rgb_file[3:] == ram_file[3:])
     rgb_files.append(read_image(os.path.join(SOURCE_RGB_DIR, rgb_file)))
     ram_files.append(read_image(os.path.join(SOURCE_RAM_DIR, ram_file)))
@@ -27,7 +28,7 @@ def get_datasets(game_name):
 
   rgb_files = np.array(rgb_files)
   ram_files = np.array(ram_files)
-
+  
   if not os.path.exists("data/{}-v4/".format(game_name)):
     os.makedirs("data/{}-v4/".format(game_name))
 
@@ -35,6 +36,7 @@ def get_datasets(game_name):
 
 def load_data(game_name, model_type = None, split = 0.8, is_save_data = False):
   # Get train and val data and flatten them if FeedForward NN is the model
+
   x_train, y_train, x_test, y_test = load_datasets(is_save_data, split, game_name)
   input_dim = 84 * 84
 
@@ -67,7 +69,7 @@ def load_datasets(is_save_data, split, game_name):
   if train: train_rgb, train_ram, train_rgb_names, train_ram_names = zip(*train)
   if validation: val_rgb, val_ram, val_rgb_names, val_ram_names = zip(*validation)
 
-  if is_save_data: save_datasets(train_rgb, train_ram, val_rgb, val_ram,
+  if is_save_data: save_datasets(game_name, train_rgb, train_ram, val_rgb, val_ram,
     train_rgb_names, train_ram_names, val_rgb_names, val_ram_names)
 
   if train:
@@ -80,13 +82,13 @@ def load_datasets(is_save_data, split, game_name):
 
   return train_rgb, train_ram, val_rgb, val_ram
 
-def save_datasets(train_rgb, train_ram, val_rgb, val_ram,
+def save_datasets(game_name, train_rgb, train_ram, val_rgb, val_ram,
                   train_rgb_names, train_ram_names,
                   val_rgb_names, val_ram_names):
   # save train and val data in ./data within ram and rgb folders
 
-  TRAIN_DIR = "./data/train"
-  VAL_DIR = "./data/val"
+  TRAIN_DIR = "./data/{}-v4/train".format(game_name)
+  VAL_DIR = "./data/{}-v4/val".format(game_name)
 
   if not os.path.exists(TRAIN_DIR): os.makedirs(TRAIN_DIR)
   if not os.path.exists(VAL_DIR): os.makedirs(VAL_DIR)
@@ -119,27 +121,9 @@ def save_datasets(train_rgb, train_ram, val_rgb, val_ram,
       val_rgb_img.save(val_rgb_dir + val_rgb_name)
       val_ram_img.save(val_ram_dir + val_ram_name)
 
-"""
-save_rgb_array(image, output_dir="./train_history/environments/rgb/",
-               filename="_epi_{}_step_{}".format(episode, i)
-
-def save_rgb_array(image_array, output_dir="", filename=""):
-    img = Image.fromarray(image_array)
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    img.save(output_dir + '/rgb{}.png'.format(filename))
-"""
-"""
-(Pdb) image_array.shape
-(84, 84)
-(Pdb) image_array.dtype
-dtype('uint8')
-(Pdb) type(image_array)
-<class 'numpy.ndarray'>
-"""
-
 def read_image(image_path):
-  """Get a numpy array of an image so that one can access values[x][y]."""
+  # Get a numpy array of an image so that one can access values[x][y].
+
   image = Image.open(image_path, 'r')
   width, height = image.size
   pixel_values = list(image.getdata())
@@ -154,27 +138,29 @@ def read_image(image_path):
   return pixel_values
 
 def plot_history(history, figure_name):
-  if not os.path.exists('saved_figures/'):
-      os.makedirs('saved_figures/')
+  if not os.path.exists('saved_figures/'): os.makedirs('saved_figures/')
+
   print(history.history.keys())
   # dict_keys(['val_loss', 'val_mse', 'val_mae', 'loss', 'mse', 'mae'])
+
   plt.plot(history.history['mse'])
   plt.plot(history.history['val_mse'])
   plt.ylabel('loss')
   plt.xlabel('epoch')
   plt.legend(['train MSE', 'val MSE'], loc='upper left')
-  plt.clf()
-  plt.show()
-  plt.savefig('saved_figures/{}_MSE.png'.format(figure_name))
+  plt.savefig('saved_figures/{}_MSE.png'.format(figure_name), dpi=800)
+  # plt.show()
+  plt.close()
+
   plt.plot(history.history['mae'], color = 'm')
   plt.plot(history.history['val_mae'], color = 'g')
   plt.ylabel('loss')
   plt.xlabel('epoch')
   plt.legend(['train MAE', 'val MAE'], loc='upper left')
-  plt.show()
-  plt.savefig('saved_figures/{}_MAE.png'.format(figure_name))
-  print('Figures have been save to "saved_figures/"')
+  plt.savefig('saved_figures/{}_MAE.png'.format(figure_name), dpi=800)
+  # plt.show()
 
+  print('Figures have been save to "saved_figures/"')
 
 def save_model(model, model_type, model_path="./saved_model/"):
   # serialize model to JSON
@@ -188,4 +174,4 @@ def save_model(model, model_type, model_path="./saved_model/"):
   print("Saved model to disk")
 
 if __name__ == "__main__":
-  get_datasets("Seaquest")
+  get_datasets("Breakout")

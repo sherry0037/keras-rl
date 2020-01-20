@@ -40,49 +40,6 @@ class FFModel(NNModel):
 #------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------#
-class LSTMModel(NNModel):
-  def __init__(self, **kwargs):
-    super().__init__(**kwargs)
-    self.seq_length = kwargs.get('seq_length', None)
-    self.input_shape =  (84, 84, 1)
-
-  def build(self):
-    cnn = Sequential()
-    cnn.add(Conv2D(32, kernel_size=(5, 5), activation='relu', 
-                   input_shape=self.input_shape))
-    cnn.add(MaxPooling2D(pool_size=(2, 2)))
-    cnn.add(Flatten())
-    cnn.add(Dense(100, activation='relu'))
-    
-    lstm = Sequential()
-    lstm.add(LSTM(200, return_sequences = True, input_shape = (None, 100)))
-    lstm.add(TimeDistributed(Dense(150, activation='relu')))
-    lstm.add(TimeDistributed(Dense(self.output_shape, activation='linear')))
-  
-    model = Sequential()
-    model.add(TimeDistributed(cnn, input_shape = (self.seq_length,84,84,1)))
-    model.add(lstm)
-    return model
-#------------------------------------------------------------------------------#
-
-#------------------------------------------------------------------------------#
-class CNNModel2(NNModel):
-  def __init__(self, **kwargs):
-    super().__init__(**kwargs)
-
-  def build(self):
-    model = Sequential()
-    model.add(Conv2D(32, kernel_size=(5, 5), activation='relu', input_shape=self.input_shape))
-    model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
-    model.add(Conv2D(64, (5, 5), activation='relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Flatten())
-    model.add(Dense(1000, activation='relu'))
-    model.add(Dense(self.output_shape, activation='linear'))
-    return model
-#------------------------------------------------------------------------------#
-
-#------------------------------------------------------------------------------#
 class CNNModel1(NNModel):
   def __init__(self, **kwargs):
     super().__init__(**kwargs)
@@ -107,5 +64,48 @@ class CNNModel1(NNModel):
     outputs = Dense(self.output_shape, name='output_vector')(x)
     # Instantiate Model
     model = Model(inputs, outputs, name='CNNmodel1')
+    return model
+#------------------------------------------------------------------------------#
+
+#------------------------------------------------------------------------------#
+class CNNModel2(NNModel):
+  def __init__(self, **kwargs):
+    super().__init__(**kwargs)
+
+  def build(self):
+    model = Sequential()
+    model.add(Conv2D(32, kernel_size=(5, 5), activation='relu', input_shape=self.input_shape))
+    model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
+    model.add(Conv2D(64, (5, 5), activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Flatten())
+    model.add(Dense(1000, activation='relu'))
+    model.add(Dense(self.output_shape, activation='linear'))
+    return model
+#------------------------------------------------------------------------------#
+
+#------------------------------------------------------------------------------#
+class LSTMModel(NNModel):
+  def __init__(self, **kwargs):
+    super().__init__(**kwargs)
+    self.seq_length = kwargs.get('seq_length', None)
+    self.input_shape =  (84, 84, 1)
+
+  def build(self):
+    cnn = Sequential()
+    cnn.add(Conv2D(32, kernel_size=(5, 5), activation='relu', 
+                   input_shape=self.input_shape))
+    cnn.add(MaxPooling2D(pool_size=(2, 2)))
+    cnn.add(Flatten())
+    cnn.add(Dense(100, activation='relu'))
+    
+    lstm = Sequential()
+    lstm.add(LSTM(200, return_sequences = True, input_shape = (None, 100)))
+    lstm.add(TimeDistributed(Dense(150, activation='relu')))
+    lstm.add(TimeDistributed(Dense(self.output_shape, activation='linear')))
+  
+    model = Sequential()
+    model.add(TimeDistributed(cnn, input_shape = (self.seq_length,84,84,1)))
+    model.add(lstm)
     return model
 #------------------------------------------------------------------------------#
