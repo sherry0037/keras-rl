@@ -151,23 +151,28 @@ parser.add_argument('--steps', type=int, default=1750000)
 
 args = parser.parse_args()
 
-env_name_ram = None
-env_name_rgb = None
-if args.game_name == 'Breakout':
-    env_name_ram = 'Breakout-ram-v4'
-    env_name_rgb = 'Breakout-v4'
-if args.game_name == 'Seaquest':
-    env_name_ram = 'Seaquest-ram-v4'
-    env_name_rgb = 'Seaquest-v4'
+env_name_ram = args.game_name + '-ram-v4'
+env_name_rgb = args.game_name + '-v4'
+# if args.game_name == 'Breakout':
+#     env_name_ram = 'Breakout-ram-v4'
+#     env_name_rgb = 'Breakout-v4'
+# if args.game_name == 'Seaquest':
+#     env_name_ram = 'Seaquest-ram-v4'
+#     env_name_rgb = 'Seaquest-v4'
 
+env_name = None
 # Get the environment and extract the number of actions.
 if args.mode == 'train' or args.mode == 'test':
-    env = gym.make(env_name_ram)
+    if args.rl_agent == 'rgb':
+        env_name = env_name_rgb
+    else:
+        env_name = env_name_ram
 
 # When we do transfer, we use an RGB environment with a pre-trained RAM agent.
 elif args.mode == 'transfer':
-    env = gym.make(env_name_rgb)
+    env_name = env_name_rgb
 
+env = gym.make(env_name)
 
 np.random.seed(123)
 env.seed(123)
@@ -197,7 +202,7 @@ if args.mode == "transfer":
     processor = AtariProcessor(is_ram=True, transfer_model=transfer_model,
                                transfer_model_name=args.transfer_model)
 else:
-    processor = AtariProcessor(is_ram=True)
+    processor = AtariProcessor(is_ram=(args.rl_agent != 'rgb'))
 
 # Select a policy. We use eps-greedy action selection, which means that a random action is selected
 # with probability eps. We anneal eps from 1.0 to 0.1 over the course of 1M steps. This is done so that
@@ -224,9 +229,9 @@ if args.mode == 'train':
     save_dir = "./saved_model/" + args.rl_agent
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    weights_filename = 'dqn_{}_weights.h5f'.format(env_name_ram)
-    checkpoint_weights_filename = 'dqn_' + env_name_ram + '_weights_{step}.h5f'
-    log_filename = 'dqn_{}_log.json'.format(env_name_ram)
+    weights_filename = 'dqn_{}_weights.h5f'.format(env_name)
+    checkpoint_weights_filename = 'dqn_' + env_name + '_weights_{step}.h5f'
+    log_filename = 'dqn_{}_log.json'.format(env_name)
     callbacks = [ModelIntervalCheckpoint(os.path.join(save_dir, checkpoint_weights_filename), interval=250000)]
     callbacks += [FileLogger(os.path.join(save_dir, log_filename), interval=100)]
 
@@ -236,7 +241,7 @@ if args.mode == 'train':
     dqn.test(env, nb_episodes=20, visualize=False)
 elif args.mode == 'test' or args.mode == 'transfer':
     save_dir = "./saved_model/" + args.rl_agent
-    weights_filename = 'dqn_{}_weights_{}.h5f'.format(env_name_ram, args.steps)
+    weights_filename = 'dqn_{}_weights_{}.h5f'.format(env_name, args.steps)
     if args.weights:
         weights_filename = args.weights
     dqn.load_weights(os.path.join(save_dir, weights_filename))

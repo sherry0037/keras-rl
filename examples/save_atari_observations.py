@@ -4,6 +4,7 @@ import argparse
 from PIL import Image
 import numpy as np
 import gym
+import os
 
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Flatten, Convolution2D, Permute
@@ -50,11 +51,11 @@ parser.add_argument('--save_every_episode', type=int, default=5)
 parser.add_argument('--save_every_step', type=int, default=5)
 args = parser.parse_args()
 
-env_name = None
-if args.game_name == 'Breakout':
-    env_name = 'Breakout-v4'
-if args.game_name == 'Seaquest':
-    env_name = 'Seaquest-v4'
+env_name = args.game_name + '-v4'
+# if args.game_name == 'Breakout':
+#     env_name = 'Breakout-v4'
+# if args.game_name == 'Seaquest':
+#     env_name = 'Seaquest-v4'
 
 # Get the environment and extract the number of actions.
 env = gym.make(env_name)
@@ -113,22 +114,26 @@ dqn.compile(Adam(lr=.00025), metrics=['mae'])
 if args.mode == 'train':
     # Okay, now it's time to learn something! We capture the interrupt exception so that training
     # can be prematurely aborted. Notice that now you can use the built-in Keras callbacks!
+    save_dir = "./saved_model/rgb"
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
     weights_filename = 'dqn_{}_weights.h5f'.format(env_name)
     checkpoint_weights_filename = 'dqn_' + env_name + '_weights_{step}.h5f'
     log_filename = 'dqn_{}_log.json'.format(env_name)
-    callbacks = [ModelIntervalCheckpoint(checkpoint_weights_filename, interval=250000)]
-    callbacks += [FileLogger(log_filename, interval=100)]
+    callbacks = [ModelIntervalCheckpoint(os.path.join(save_dir, checkpoint_weights_filename), interval=250000)]
+    callbacks += [FileLogger(os.path.join(save_dir, log_filename), interval=100)]
     dqn.new_fit(env, callbacks=callbacks, nb_steps=args.steps, log_interval=10000, verbose=2,
                 save_every_episode=args.save_every_episode, save_every_step=args.save_every_step)
 
     # After training is done, we save the final weights one more time.
-    dqn.save_weights(weights_filename, overwrite=True)
+    dqn.save_weights(os.path.join(save_dir, weights_filename), overwrite=True)
 
     # Finally, evaluate our algorithm for 10 episodes.
-    dqn.test(env, nb_episodes=10, visualize=False)
+    dqn.test(env, nb_episodes=20, visualize=False)
 elif args.mode == 'test':
+    save_dir = "./saved_model/rgb"
     weights_filename = 'dqn_{}_weights.h5f'.format(env_name)
     if args.weights:
         weights_filename = args.weights
-    dqn.load_weights(weights_filename)
-    dqn.test(env, nb_episodes=10, visualize=True)
+    dqn.load_weights(os.path.join(save_dir, weights_filename))
+    dqn.test(env, nb_episodes=20, visualize=True)
