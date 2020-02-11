@@ -5,6 +5,9 @@ from PIL import Image
 import numpy as np
 import gym
 import os
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+
 
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Flatten, Convolution2D, Permute
@@ -44,7 +47,7 @@ class AtariProcessor(Processor):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--mode', choices=['train', 'test'], default='train')
-parser.add_argument('--game_name', choices=['Breakout', 'Seaquest'], default='Breakout')
+parser.add_argument('--game_name', default='Breakout')
 parser.add_argument('--weights', type=str, default=None)
 parser.add_argument('--steps', type=int, default=1750000)
 parser.add_argument('--save_every_episode', type=int, default=5)

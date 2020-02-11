@@ -12,7 +12,8 @@ To do transfer learning (run RAM agent under RGB environment), run
 from __future__ import division
 import argparse
 import os
-
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from PIL import Image
 import numpy as np
 import gym
@@ -242,6 +243,8 @@ if args.mode == 'train':
 elif args.mode == 'test' or args.mode == 'transfer':
     save_dir = "./saved_model/" + args.rl_agent
     weights_filename = 'dqn_{}_weights_{}.h5f'.format(env_name, args.steps)
+    if args.mode == 'transfer':
+        weights_filename = 'dqn_{}_weights_{}.h5f'.format(env_name_ram, args.steps)
     if args.weights:
         weights_filename = args.weights
     dqn.load_weights(os.path.join(save_dir, weights_filename))
