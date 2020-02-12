@@ -35,21 +35,31 @@ between the two inputs to make use of the already-trained model.)
 
 ## Implementation and Usages
 
-1. `new_dqn.py` defines an dqn agent that records both RGB and RAM in callbacks during training.
+1. **Collect data for RGB2RAM**. `save_atari_observations.py` defines an dqn agent that records both RGB and RAM in callbacks during training.
 
     - Run `python examples/save_atari_observations.py [--game Breakout]` to train a model on RGB and save observations.
     
     - To specify the frequency of saving observations, run with options:
     
         `python examples/save_atari_observations.py --save_every_episode 10 --save_every_step 20`
+      
+    - Observations are saved under `./train_history/` directory.
+    
+2. **Train RGB2RAM**.
+
+    - Go to `./rgb2ram` directory, run `python3 utils.py` to get training data from `./train_history/` and save to `./rgb2ram/data` in ".npz" format.
+    
+    - Under `./rgb2ram`, to learn mapping between RGB and RAM, run:
         
-    - Currently we only support Breakout and Seaquest
+        `python3 train.py [--game_name Bowling --model CNN2]`
+        
+      Possible model options are: 'FF', 'CNN1', 'CNN2', 'LSTM'.
  
- 2. Run `python examples/new_dqn_atari.py --help` to see how to use transfer learning models to train RL agent.
+3. Run `python examples/new_dqn_atari.py --help` to see how to use transfer learning models to train RL agent.
     
     eg. `python3 examples/new_dqn_atari.py --mode transfer --game_name Breakout --transfer_model cnn2 --rl_agent big_ram`
  
- 3. Go to rgb2ram directory, run `python3 train.py` to learn mapping between RGB and RAM
+
     
 ## Next steps:
 
