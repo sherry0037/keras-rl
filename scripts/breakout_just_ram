@@ -1,0 +1,52 @@
+#!/bin/bash
+#----------------------------------------------------
+# Sample Slurm job script
+#   for TACC Stampede2 KNL nodes
+#
+#   *** Serial Job on Normal Queue ***
+# 
+# Last revised: 20 Oct 2017
+#
+# Notes:
+#
+#   -- Copy/edit this script as desired.  Launch by executing
+#      "sbatch knl.serial.slurm" on a Stampede2 login node.
+#
+#   -- Serial codes run on a single node (upper case N = 1).
+#        A serial code ignores the value of lower case n,
+#        but slurm needs a plausible value to schedule the job.
+#
+#   -- For a good way to run multiple serial executables at the
+#        same time, execute "module load launcher" followed
+#        by "module help launcher".
+
+#----------------------------------------------------
+
+#SBATCH -J tl           # Job name
+#SBATCH -o brk_just_ram.o%j       # Name of stdout output file
+#SBATCH -e brk_just_ram.e%j       # Name of stderr error file
+#SBATCH -p p100          # Queue (partition) name
+#SBATCH -N 1               # Total # of nodes (must be 1 for serial)
+#SBATCH -n 1               # Total # of mpi tasks (should be 1 for serial)
+#SBATCH -t 03:30:00        # Run time (hh:mm:ss)
+#SBATCH --mail-user=yixuan.sherry.ni@gmail.com
+#SBATCH --mail-type=all    # Send email at begin and end of jobct   
+# Other commands must follow all #SBATCH directives...
+
+module list
+pwd
+date
+module load intel/17.0.4 python3/3.6.3
+module load cuda/10.0 cudnn/7.6.2 nccl/2.4.7
+pip3 install --user tensorflow-gpu==1.13.2
+pip3 install --user keras
+pip3 install --user h5py
+pip3 install --user Pillow
+pip3 install --user gym
+pip3 install --user gym[atari]
+
+# Launch serial code...
+
+python3 examples/new_dqn_atari.py --mode train --game_name Breakout --rl_agent just_ram --steps 3500000         # Do not use ibrun or any other MPI launcher
+
+# ---------------------------------------------------
